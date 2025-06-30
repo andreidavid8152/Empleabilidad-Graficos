@@ -4,6 +4,7 @@ import plotly.express as px
 import streamlit as st
 from utils.carga_datos import cargar_datos_empleabilidad
 from utils.estilos import aplicar_tema_plotly
+from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
 st.title("🔄 Índice de Rotación en el Primer Año")
@@ -17,24 +18,7 @@ df = df.dropna(subset=['FECINGAFI.1', 'IdentificacionBanner.1', 'NOMEMP.1'])
 df = df.sort_values(by=['IdentificacionBanner.1', 'FECINGAFI.1'])
 
 # === Filtros interdependientes ===
-nivel = st.selectbox("Nivel", ["Todos"] + sorted(df['regimen.1'].dropna().unique()))
-df_f = df if nivel == "Todos" else df[df['regimen.1'] == nivel]
-
-oferta = st.selectbox("Oferta Actual", ["Todos"] + sorted(df_f['Oferta actual'].dropna().unique()))
-df_f = df_f if oferta == "Todos" else df_f[df_f['Oferta actual'] == oferta]
-
-facultad = st.selectbox("Facultad", ["Todas"] + sorted(df_f['FACULTAD'].dropna().unique()))
-df_f = df_f if facultad == "Todas" else df_f[df_f['FACULTAD'] == facultad]
-
-carrera = st.selectbox("Carrera", ["Todas"] + sorted(df_f['CarreraHomologada.1'].dropna().unique()))
-df_f = df_f if carrera == "Todas" else df_f[df_f['CarreraHomologada.1'] == carrera]
-
-cohorte = st.selectbox("Cohorte", ["Todos"] + sorted(df_f['AnioGraduacion.1'].dropna().unique()))
-df_f = df_f if cohorte == "Todos" else df_f[df_f['AnioGraduacion.1'] == cohorte]
-
-tipo_empleo = st.selectbox("Trabajo Formal", ["Todos", "EMPLEO FORMAL", "EMPLEO NO FORMAL"])
-if tipo_empleo != "Todos":
-    df_f = df_f[df_f['Empleo formal'].str.strip().str.upper() == tipo_empleo]
+df_fil, _ = aplicar_filtros(df)
 
 # === Cálculo de rotación ===
 def calcular_rotacion(df_filtrado):
@@ -70,10 +54,10 @@ def calcular_rotacion(df_filtrado):
     return resumen.sort_values('TasaRotacion', ascending=False)
 
 # === Mostrar gráfico ===
-if df_f.empty:
+if df_fil.empty:
     st.warning("No hay datos para esta combinación de filtros.")
 else:
-    resumen = calcular_rotacion(df_f)
+    resumen = calcular_rotacion(df_fil)
 
     if resumen.empty:
         st.warning("No hay datos de rotación disponibles.")

@@ -4,6 +4,7 @@ import plotly.express as px
 from dateutil.relativedelta import relativedelta
 from utils.carga_datos import cargar_datos_empleabilidad
 from utils.estilos import aplicar_tema_plotly
+from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
 st.title("⏱️ Tiempo al Primer Empleo desde la Graduación")
@@ -38,23 +39,7 @@ df = df.drop_duplicates(subset='IdentificacionBanner.1', keep='first')
 # --------------------------
 # FILTROS INTERDEPENDIENTES
 # --------------------------
-nivel_sel = st.selectbox("Nivel", ["Todos"] + sorted(df['regimen.1'].dropna().unique()))
-df_fil = df if nivel_sel == "Todos" else df[df['regimen.1'] == nivel_sel]
-
-oferta_sel = st.selectbox("Oferta Actual", ["Todos"] + sorted(df_fil['Oferta actual'].dropna().unique()))
-df_fil = df_fil if oferta_sel == "Todos" else df_fil[df_fil['Oferta actual'] == oferta_sel]
-
-facultad_sel = st.selectbox("Facultad", ["Todas"] + sorted(df_fil['FACULTAD'].dropna().unique()))
-df_fil = df_fil if facultad_sel == "Todas" else df_fil[df_fil['FACULTAD'] == facultad_sel]
-
-carrera_sel = st.selectbox("Carrera", ["Todas"] + sorted(df_fil['CarreraHomologada.1'].dropna().unique()))
-df_fil = df_fil if carrera_sel == "Todas" else df_fil[df_fil['CarreraHomologada.1'] == carrera_sel]
-
-cohorte_sel = st.selectbox("Cohorte (Año Graduación)", ["Todos"] + sorted(df_fil['AnioGraduacion.1'].dropna().unique()))
-df_fil = df_fil if cohorte_sel == "Todos" else df_fil[df_fil['AnioGraduacion.1'] == cohorte_sel]
-
-formal_sel = st.selectbox("Trabajo Formal", ["Todos"] + sorted(df_fil['Empleo formal'].dropna().astype(str).unique()))
-df_fil = df_fil if formal_sel == "Todos" else df_fil[df_fil['Empleo formal'].astype(str) == formal_sel]
+df_fil, _ = aplicar_filtros(df)
 
 # --------------------------
 # GRÁFICO DE HISTOGRAMA

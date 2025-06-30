@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from utils.carga_datos import cargar_datos_empleabilidad
 from utils.estilos import aplicar_tema_plotly
+from utils.filtros import aplicar_filtros
+
 import plotly.express as px
 
 aplicar_tema_plotly()
@@ -27,14 +29,7 @@ df['Periodo'] = df['Anio.1'].astype(str) + ' ' + df['Quimestre']
 # --------------------------
 # FILTROS INTERDEPENDIENTES
 # --------------------------
-nivel_sel = st.selectbox("Nivel", ["Todos"] + sorted(df['regimen.1'].dropna().unique()))
-df_fil = df if nivel_sel == "Todos" else df[df['regimen.1'] == nivel_sel]
-
-oferta_sel = st.selectbox("Oferta Actual", ["Todos"] + sorted(df_fil['Oferta actual'].dropna().unique()))
-df_fil = df_fil if oferta_sel == "Todos" else df_fil[df_fil['Oferta actual'] == oferta_sel]
-
-facultad_sel = st.selectbox("Filtrar por Facultad (opcional)", ["Todas"] + sorted(df_fil['FACULTAD'].dropna().unique()))
-df_fil = df_fil if facultad_sel == "Todas" else df_fil[df_fil['FACULTAD'] == facultad_sel]
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad"])
 
 # --------------------------
 # SLIDER DE UMBRAL (porcentaje)

@@ -4,6 +4,7 @@ import streamlit as st
 import plotly.colors as pc
 from utils.carga_datos import cargar_datos_empleabilidad
 from utils.estilos import aplicar_tema_plotly
+from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
 st.title("🔁 Movilidad Intersectorial")
@@ -23,41 +24,7 @@ df = df.dropna(subset=['sector_anterior', 'sector_actual'])
 df = df[df['sector_anterior'] != df['sector_actual']]
 
 # === Filtros ===
-niveles = df['regimen.1'].dropna().unique()
-nivel = st.selectbox("Nivel", ["Todos"] + sorted(niveles))
-df_f = df.copy()
-if nivel != "Todos":
-    df_f = df_f[df_f['regimen.1'] == nivel]
-
-ofertas = df_f['Oferta actual'].dropna().unique()
-oferta = st.selectbox("Oferta Actual", ["Todas"] + sorted(ofertas))
-if oferta != "Todas":
-    df_f = df_f[df_f['Oferta actual'] == oferta]
-
-facultades = df_f['FACULTAD'].dropna().unique()
-facultad = st.selectbox("Facultad", ["Todas"] + sorted(facultades))
-if facultad != "Todas":
-    df_f = df_f[df_f['FACULTAD'] == facultad]
-
-carreras = df_f['CarreraHomologada.1'].dropna().unique()
-carrera = st.selectbox("Carrera", ["Todas"] + sorted(carreras))
-if carrera != "Todas":
-    df_f = df_f[df_f['CarreraHomologada.1'] == carrera]
-
-cohortes = df_f['AnioGraduacion.1'].dropna().unique()
-cohorte = st.selectbox("Cohorte", ["Todas"] + sorted(cohortes))
-if cohorte != "Todas":
-    df_f = df_f[df_f['AnioGraduacion.1'] == cohorte]
-
-tipo_empleo = st.selectbox("Trabajo Formal", ["TODOS", "EMPLEO FORMAL", "EMPLEO NO FORMAL"])
-if tipo_empleo != "TODOS":
-    df_f = df_f[df_f['Empleo formal'].str.strip().str.upper() == tipo_empleo]
-
-df_f = df.copy()
-if facultad != "Todas":
-    df_f = df_f[df_f['FACULTAD'] == facultad]
-if tipo_empleo != "TODOS":
-    df_f = df_f[df_f['Empleo formal'].str.strip().str.upper() == tipo_empleo]
+df_fil, _ = aplicar_filtros(df)
 
 # === Generar datos para Sankey ===
 def generar_flujo(df_filtrado):
@@ -73,7 +40,7 @@ def generar_flujo(df_filtrado):
 
     return labels.tolist(), source.tolist(), target.tolist(), value.tolist()
 
-labels, source, target, value = generar_flujo(df_f)
+labels, source, target, value = generar_flujo(df_fil)
 
 # === Mostrar gráfico ===
 if not labels:
