@@ -1,18 +1,18 @@
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
-import plotly.colors as pc
 from utils.carga_datos import cargar_datos_empleabilidad
 from utils.estilos import aplicar_tema_plotly
 from utils.filtros import aplicar_filtros
+import pandas.io.formats.style
 
 aplicar_tema_plotly()
-st.title("🔁 Movilidad Intersectorial")
+st.title("📊 Movilidad Intersectorial")
 
 # === Cargar datos con spinner ===
 with st.spinner("Cargando datos..."):
     df = cargar_datos_empleabilidad()
 
+# Preprocesamiento
 df = df.dropna(subset=["SECTOR", "FECINGAFI.1"]).copy()
 df.loc[:, "FECINGAFI.1"] = pd.to_datetime(df["FECINGAFI.1"], errors="coerce")
 df = df.sort_values(by=['IdentificacionBanner.1', 'FECINGAFI.1'])
@@ -23,46 +23,36 @@ df['sector_actual'] = df['SECTOR']
 df = df.dropna(subset=['sector_anterior', 'sector_actual'])
 df = df[df['sector_anterior'] != df['sector_actual']]
 
-# === Filtros ===
+# === Filtros generales + filtro por sector ===
 df_fil, _ = aplicar_filtros(df)
+sectores_disponibles = sorted(pd.unique(df_fil[['sector_anterior', 'sector_actual']].values.ravel()))
+sectores_seleccionados = st.multiselect(
+    "Filtrar por sectores involucrados:",
+    options=sectores_disponibles,
+    default=sectores_disponibles
+)
 
-# === Generar datos para Sankey ===
-def generar_flujo(df_filtrado):
-    transiciones = df_filtrado.groupby(['sector_anterior', 'sector_actual']).size().reset_index(name='count')
-    if transiciones.empty:
-        return [], [], [], []
+df_fil = df_fil[
+    df_fil['sector_anterior'].isin(sectores_seleccionados) &
+    df_fil['sector_actual'].isin(sectores_seleccionados)
+]
 
-    labels = pd.unique(transiciones[['sector_anterior', 'sector_actual']].values.ravel())
-    label_dict = {label: idx for idx, label in enumerate(labels)}
-    source = transiciones['sector_anterior'].map(label_dict)
-    target = transiciones['sector_actual'].map(label_dict)
-    value = transiciones['count']
-
-    return labels.tolist(), source.tolist(), target.tolist(), value.tolist()
-
-labels, source, target, value = generar_flujo(df_fil)
-
-# === Mostrar gráfico ===
-if not labels:
-    st.warning("No hay datos suficientes para mostrar movilidad entre sectores.")
+# === Tabla general de transiciones ===
+st.subheader("📌 Tabla de transiciones generales")
+tabla_general = df_fil.groupby(['sector_anterior', 'sector_actual']).size().reset_index(name='Cantidad')
+if tabla_general.empty:
+    st.info("No hay transiciones entre los sectores seleccionados.")
 else:
-    colors = pc.qualitative.Pastel  # Puedes usar: Pastel, Set2, Bold, etc.
-    color_palette = (colors * ((len(labels) // len(colors)) + 1))[:len(labels)]
+    st.dataframe(tabla_general, use_container_width=True, hide_index=True)
 
-    fig = go.Figure(data=[go.Sankey(
-        node=dict(
-            pad=15,
-            thickness=20,
-            line=dict(color="black", width=0.5),
-            label=labels,
-            color=color_palette
-        ),
-        link=dict(
-            source=source,
-            target=target,
-            value=value
-        )
-    )])
+# === Tabla por graduado ===
+st.subheader("🧑‍🎓 Tabla de transiciones por graduado")
+tabla_graduado = df_fil[[
+    'IdentificacionBanner.1', 'Estudiante.1', 'FECINGAFI.1',
+    'sector_anterior', 'sector_actual'
+]].sort_values(by=['IdentificacionBanner.1', 'FECINGAFI.1'])
 
-    fig.update_layout(title_text="Transiciones entre sectores", font_size=10)
-    st.plotly_chart(fig, use_container_width=True)
+if tabla_graduado.empty:
+    st.info("No hay transiciones registradas por estudiante con los filtros actuales.")
+else:
+    st.dataframe(tabla_graduado, use_container_width=True, hide_index=True)

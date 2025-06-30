@@ -24,9 +24,20 @@ df_multi = df_multi.drop_duplicates(subset=['IdentificacionBanner.1', 'Mes.1'], 
 df_uniq = df[~duplicados].copy()
 df = pd.concat([df_uniq, df_multi], ignore_index=True)
 
-# Clasificar empleo formal
+# Clasificar empleo formal según nuevos valores
 df['Empleo formal'] = df['Empleo formal'].astype(str).str.strip().str.upper()
-df['Formal'] = df['Empleo formal'].map({'EMPLEO FORMAL': 1, 'EMPLEO NO FORMAL': 0})
+
+def clasificar_formalidad(valor):
+    if valor == 'RELACION DE DEPENDENCIA':
+        return 1  # Formal
+    elif valor in ['SIN RELACION DE DEPENDENCIA', 'AFILIACION VOLUNTARIA']:
+        return 0  # No formal
+    elif valor == 'DESCONOCIDO':
+        return None
+    else:
+        return None
+
+df['Formal'] = df['Empleo formal'].apply(clasificar_formalidad)
 
 # --------------------------
 # FILTROS INTERDEPENDIENTES
@@ -68,15 +79,24 @@ else:
             transiciones.append(temp[['Trimestre', 'Transición']])
 
         df_trans = pd.concat(transiciones)
+        # Calcular porcentaje por trimestre
         conteo = df_trans.groupby(['Trimestre', 'Transición']).size().reset_index(name='Cantidad')
+        total_por_trimestre = conteo.groupby('Trimestre')['Cantidad'].transform('sum')
+        conteo['Porcentaje'] = (conteo['Cantidad'] / total_por_trimestre * 100).round(1)
 
         fig = px.bar(
             conteo,
             x='Trimestre',
-            y='Cantidad',
+            y='Porcentaje',
             color='Transición',
-            text='Cantidad',
-            title='Transiciones de empleo por trimestre'
+            text='Porcentaje',
+            title='Transiciones de empleo por trimestre (%)'
         )
-        fig.update_layout(barmode='stack', yaxis_title='Número de graduados', xaxis_title='Trimestre')
+        fig.update_layout(
+            barmode='stack',
+            yaxis_title='Porcentaje de graduados',
+            xaxis_title='Trimestre',
+            yaxis_ticksuffix='%'
+        )
+        fig.update_traces(textposition="inside")
         st.plotly_chart(fig, use_container_width=True)
