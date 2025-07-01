@@ -65,6 +65,7 @@ else:
             markers=True
         )
         fig.update_traces(mode='lines+markers')
+        fig.update_xaxes(dtick=1)
         fig.update_yaxes(tickformat=".0%")
 
     st.plotly_chart(fig, use_container_width=True)
