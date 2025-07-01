@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from dateutil.relativedelta import relativedelta
 from utils.carga_datos import cargar_datos_empleabilidad
-from utils.estilos import aplicar_tema_plotly
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
@@ -58,3 +58,19 @@ else:
     )
     fig.update_layout(yaxis_title='Número de graduados', xaxis_title='Meses desde graduación')
     st.plotly_chart(fig, use_container_width=True)
+
+# --------------------------
+# NOTA
+# --------------------------
+mostrar_tarjeta_nota(
+    texto_principal="""
+    <strong>📌 Nota:</strong><br>
+    Esta visualización muestran los meses promedio desde la graduación hasta el primer registro laboral formal. (Solo 2024 por ahora).
+    """,
+    nombre_filtro="Trabajo Formal",
+    descripcion_filtro="""
+    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
+    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
+    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
+    """,
+)

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from utils.carga_datos import cargar_datos_empleabilidad
-from utils.estilos import aplicar_tema_plotly
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 import plotly.express as px
@@ -104,3 +104,13 @@ else:
             .map(lambda v: 'background-color: #fff0cc' if isinstance(v, float) and v < 0 else '', subset=['Pendiente'])
 
     st.dataframe(style_table(df_alertas), use_container_width=True)
+
+# --------------------------
+# NOTA
+# --------------------------
+mostrar_tarjeta_nota(
+    texto_principal="""
+    <strong>📌 Nota:</strong><br>
+    Esta visualización muestra las carreras con baja empleabilidad y alto riesgo de desempleo..
+    """
+)

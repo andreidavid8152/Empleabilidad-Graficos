@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.carga_datos import cargar_datos_empleabilidad
-from utils.estilos import aplicar_tema_plotly
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
@@ -17,7 +17,7 @@ df = df_base.copy()
 df['Esta_empleado'] = df['SALARIO.1'].notnull() | df['RUCEMP.1'].notnull()
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
 df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte"])
 
@@ -68,3 +68,13 @@ else:
         fig.update_yaxes(tickformat=".0%")
 
     st.plotly_chart(fig, use_container_width=True)
+
+# --------------------------
+# NOTA
+# --------------------------
+mostrar_tarjeta_nota(
+    texto_principal="""
+    <strong>📌 Nota:</strong><br>
+    Esta visualización muestra el análisis entre diferentes generaciones de graduados para evaluar cambios en empleabilidad.
+    """
+)

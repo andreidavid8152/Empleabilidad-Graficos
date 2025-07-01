@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from utils.carga_datos import cargar_datos_empleabilidad
-from utils.estilos import aplicar_tema_plotly
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
@@ -48,3 +48,19 @@ else:
         xaxis_tickangle=-45
     )
     st.plotly_chart(fig, use_container_width=True)
+
+# --------------------------
+# NOTA
+# --------------------------
+mostrar_tarjeta_nota(
+    texto_principal="""
+    <strong>📌 Nota:</strong><br>
+    Esta visualización muestra la clasificación y frecuencia de los puestos ocupados por los graduados.
+    """,
+    nombre_filtro="Trabajo Formal",
+    descripcion_filtro="""
+    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
+    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
+    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
+    """,
+)

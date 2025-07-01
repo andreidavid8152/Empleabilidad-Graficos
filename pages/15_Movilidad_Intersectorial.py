@@ -1,9 +1,8 @@
 import pandas as pd
 import streamlit as st
 from utils.carga_datos import cargar_datos_empleabilidad
-from utils.estilos import aplicar_tema_plotly
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
-import pandas.io.formats.style
 
 aplicar_tema_plotly()
 st.title("📊 Movilidad Intersectorial")
@@ -56,3 +55,19 @@ if tabla_graduado.empty:
     st.info("No hay transiciones registradas por estudiante con los filtros actuales.")
 else:
     st.dataframe(tabla_graduado, use_container_width=True, hide_index=True)
+
+# --------------------------
+# NOTA
+# --------------------------
+mostrar_tarjeta_nota(
+    texto_principal="""
+    <strong>📌 Nota:</strong><br>
+    Esta visualización muestra los cambios de sector económico entre empleos consecutivos en la trayectoria del graduado.
+    """,
+    nombre_filtro="Trabajo Formal",
+    descripcion_filtro="""
+    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
+    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
+    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
+    """,
+)
