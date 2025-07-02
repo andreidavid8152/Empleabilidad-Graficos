@@ -19,9 +19,9 @@ df['SALARIO.1'] = pd.to_numeric(df['SALARIO.1'], errors='coerce')
 df['OCUAFI.1'] = df['OCUAFI.1'].fillna('SIN INFORMACIÓN')
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # --------------------------
 # GRÁFICO

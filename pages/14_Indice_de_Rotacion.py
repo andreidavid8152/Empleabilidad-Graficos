@@ -17,8 +17,10 @@ df['FECINGAFI.1'] = pd.to_datetime(df['FECINGAFI.1'], errors='coerce')
 df = df.dropna(subset=['FECINGAFI.1', 'IdentificacionBanner.1', 'NOMEMP.1'])
 df = df.sort_values(by=['IdentificacionBanner.1', 'FECINGAFI.1'])
 
-# === Filtros interdependientes ===
-df_fil, _ = aplicar_filtros(df)
+# --------------------------
+# FILTROS
+# --------------------------
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # === Cálculo de rotación ===
 def calcular_rotacion(df_filtrado):

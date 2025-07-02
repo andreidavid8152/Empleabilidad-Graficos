@@ -23,7 +23,11 @@ df = df.dropna(subset=['sector_anterior', 'sector_actual'])
 df = df[df['sector_anterior'] != df['sector_actual']]
 
 # === Filtros generales + filtro por sector ===
-df_fil, _ = aplicar_filtros(df)
+# --------------------------
+# FILTROS
+# --------------------------
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
+
 sectores_disponibles = sorted(pd.unique(df_fil[['sector_anterior', 'sector_actual']].values.ravel()))
 sectores_seleccionados = st.multiselect(
     "Filtrar por sectores involucrados:",

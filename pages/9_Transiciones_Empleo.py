@@ -40,9 +40,9 @@ def clasificar_formalidad(valor):
 df['Formal'] = df['Empleo formal'].apply(clasificar_formalidad)
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # --------------------------
 # GENERAR GRÁFICO DE TRANSICIONES
