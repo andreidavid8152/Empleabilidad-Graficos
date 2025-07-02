@@ -12,7 +12,21 @@ def cargar_datos_empleabilidad():
             st.error(f"No se encontró el archivo: {ruta_archivo}")
             st.stop()
 
-        df = pd.read_excel(ruta_archivo)
+        df = pd.read_excel(ruta_archivo, sheet_name="Limpia")
         st.session_state.df_empleabilidad = df
 
     return st.session_state.df_empleabilidad
+
+def cargar_datos_titulos():
+    if "df_titulos" not in st.session_state:
+        ruta_proyecto = Path(__file__).resolve().parent.parent
+        ruta_archivo = ruta_proyecto / "data" / "empleabilidad.xlsx"
+
+        if not ruta_archivo.exists():
+            st.error(f"No se encontró el archivo: {ruta_archivo}")
+            st.stop()
+
+        df = pd.read_excel(ruta_archivo, sheet_name="Titulos")
+        st.session_state.df_titulos = df
+
+    return st.session_state.df_titulos
