@@ -7,7 +7,7 @@ from utils.filtros import aplicar_filtros
 aplicar_tema_plotly()
 st.title("Tasa de Ocupacion por Quimestre")
 
-# 🌀 Cargar datos sin procesar
+# Cargar datos sin procesar
 with st.spinner("Cargando datos..."):
     df_base = cargar_datos_empleabilidad()
 
@@ -25,7 +25,7 @@ df['Periodo'] = df['Anio.1'].astype(str) + ' ' + df['Quimestre']
 # --------------------------
 # FILTROS
 # --------------------------
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte_multi", "Trabajo Formal"])
 
 # --------------------------
 # AGRUPACIÓN Y GRÁFICO
@@ -33,22 +33,43 @@ df_fil, _ = aplicar_filtros(df)
 if df_fil.empty:
     st.warning("No hay datos disponibles con los filtros seleccionados.")
 else:
-    resumen = df_fil.groupby(['Periodo']).agg(
-        empleados=('Esta_empleado', 'sum'),
-        total=('IdentificacionBanner.1', 'nunique')
-    ).reset_index()
-
-    resumen['tasa_empleabilidad'] = resumen['empleados'] / resumen['total']
-
-    fig = px.line(
-        resumen,
-        x='Periodo',
-        y='tasa_empleabilidad',
-        title='Tasa de Empleabilidad',
-        markers=True,
-        labels={'tasa_empleabilidad': 'Tasa de empleo'}
-    )
-    fig.update_layout(xaxis_tickangle=-45)
+    # Si hay múltiples años seleccionados, agrupar por Periodo y Cohorte
+    if isinstance(selecciones.get('Cohorte_multi'), list) and len(selecciones['Cohorte_multi']) > 1:
+        resumen = df_fil.groupby(['Periodo', 'AnioGraduacion.1']).agg(
+            empleados=('Esta_empleado', 'sum'),
+            total=('IdentificacionBanner.1', 'nunique')
+        ).reset_index()
+        
+        resumen['tasa_empleabilidad'] = resumen['empleados'] / resumen['total']
+        
+        fig = px.line(
+            resumen,
+            x='Periodo',
+            y='tasa_empleabilidad',
+            color='AnioGraduacion.1',
+            title='Tasa de Empleabilidad por Cohorte',
+            markers=True,
+            labels={'tasa_empleabilidad': 'Tasa de empleo', 'AnioGraduacion.1': 'Cohorte'}
+        )
+        fig.update_layout(xaxis_tickangle=-45)
+    else:
+        # Si solo hay un año o no se usa el multiselect, agrupar solo por Periodo
+        resumen = df_fil.groupby(['Periodo']).agg(
+            empleados=('Esta_empleado', 'sum'),
+            total=('IdentificacionBanner.1', 'nunique')
+        ).reset_index()
+        
+        resumen['tasa_empleabilidad'] = resumen['empleados'] / resumen['total']
+        
+        fig = px.line(
+            resumen,
+            x='Periodo',
+            y='tasa_empleabilidad',
+            title='Tasa de Empleabilidad',
+            markers=True,
+            labels={'tasa_empleabilidad': 'Tasa de empleo'}
+        )
+        fig.update_layout(xaxis_tickangle=-45)
 
     st.plotly_chart(fig, use_container_width=True)
 
@@ -57,7 +78,7 @@ else:
 # --------------------------
 mostrar_tarjeta_nota(
     texto_principal="""
-    <strong>📌 Nota:</strong><br>
+    <strong> Nota:</strong><br>
     Esta visualización muestra la proporción de graduados con ocupación sobre el total de graduados.
     """,
     nombre_filtro="Trabajo Formal",

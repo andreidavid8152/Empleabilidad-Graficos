@@ -22,9 +22,9 @@ df = df[df['Quimestre'].notnull()]
 df['Periodo'] = df['Anio.1'].astype(str) + ' ' + df['Quimestre']
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # --------------------------
 # BOXPLOT Y RESUMEN

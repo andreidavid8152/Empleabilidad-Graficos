@@ -34,10 +34,10 @@ for _, grupo in df_ordenado.groupby(['IdentificacionBanner.1', 'NOMEMP.1']):
 
 df = pd.DataFrame(empleos)
 
-# ---------------------------------
-# FILTROS INTERDEPENDIENTES
-# ---------------------------------
-df_fil, _ = aplicar_filtros(df)
+# --------------------------
+# FILTROS
+# --------------------------
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # ---------------------------------
 # Tipo de gráfico

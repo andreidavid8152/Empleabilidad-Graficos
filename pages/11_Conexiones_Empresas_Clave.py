@@ -20,9 +20,9 @@ df['Cantidad de empleados'] = pd.to_numeric(df['Cantidad de empleados'], errors=
 df['Cantidad de empleados'] = df['Cantidad de empleados'].fillna(0)
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # --------------------------
 # FILTROS ADICIONALES

@@ -29,9 +29,9 @@ def clasificar_tamano(n):
 df['Tamaño Empresa'] = df['Cantidad de empleados'].apply(clasificar_tamano)
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # --------------------------
 # GRÁFICO

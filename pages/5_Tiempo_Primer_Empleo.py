@@ -37,11 +37,9 @@ df = df.sort_values(['IdentificacionBanner.1', 'FECINGAFI.1'])
 df = df.drop_duplicates(subset='IdentificacionBanner.1', keep='first')
 
 # --------------------------
-# FILTROS INTERDEPENDIENTES
+# FILTROS
 # --------------------------
-# Filtrar solo registros del año 2024
-df = df[df["AnioGraduacion.1"] == 2024]
-df_fil, _ = aplicar_filtros(df)
+df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
 
 # --------------------------
 # GRÁFICO DE HISTOGRAMA
