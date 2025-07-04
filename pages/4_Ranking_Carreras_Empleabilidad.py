@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.express as px
 from utils.carga_datos import cargar_datos_empleabilidad
-from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota, PALETA_PASTEL
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
@@ -22,17 +22,15 @@ df['Quimestre'] = df['Mes.1'].apply(asignar_quimestre)
 df = df[df['Quimestre'].notnull()]
 df['Periodo'] = df['Anio.1'].astype(str) + ' ' + df['Quimestre']
 
-
 # --------------------------
 # FILTROS
 # --------------------------
-df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte_multi", "Trabajo Formal"])
+df_fil, selecciones = aplicar_filtros(
+    df,
+    incluir=["Nivel", "Oferta Actual", "Facultad", "Cohorte_multi", "Trabajo Formal"]
+)
 
-periodos = sorted(df_fil['Periodo'].dropna().unique())
-periodo_sel = st.selectbox("Filtrar por Periodo", ["Todos"] + periodos)
-df_fil = df_fil if periodo_sel == "Todos" else df_fil[df_fil['Periodo'] == periodo_sel]
-
-# Obtener cohortes seleccionadas del filtro
+# Obtener cohortes seleccionadas
 cohortes_seleccionadas = selecciones.get('Cohorte_multi', [])
 if isinstance(cohortes_seleccionadas, list):
     cohortes_seleccionadas = [c for c in cohortes_seleccionadas if c is not None]
@@ -45,86 +43,139 @@ else:
 if df_fil.empty:
     st.warning("No hay datos disponibles con los filtros seleccionados.")
 else:
-    if 1 < len(cohortes_seleccionadas) <= 3:
-        # Asegurarnos de que ambos sean del mismo tipo (int)
-        try:
-            cohortes_seleccionadas = [int(c) for c in cohortes_seleccionadas]
-        except Exception:
-            pass  # Si ya son int
-        # Filtrar el DataFrame primero
-        df_fil_coh = df_fil[df_fil['AnioGraduacion.1'].isin(cohortes_seleccionadas)]
-        if df_fil_coh.empty:
-            st.warning("No hay datos disponibles para las cohortes seleccionadas.")
-        else:
-            resumen = df_fil_coh.groupby(['CarreraHomologada.1', 'AnioGraduacion.1']).agg(
-                empleados=('Esta_empleado', 'sum'),
-                total=('IdentificacionBanner.1', 'nunique')
-            ).reset_index()
-            resumen = resumen[resumen['total'] > 0]
-            resumen['TasaEmpleabilidad'] = resumen['empleados'] / resumen['total']
-            if resumen.empty:
-                st.warning("No hay datos disponibles para las cohortes seleccionadas.")
-            else:
-                fig = px.bar(
-                    resumen,
-                    x='TasaEmpleabilidad',
-                    y='CarreraHomologada.1',
-                    color='AnioGraduacion.1',
-                    orientation='h',
-                    barmode='group',
-                    title='Ranking de Carreras por Empleabilidad (Comparación de Cohortes)',
-                    labels={'CarreraHomologada.1': 'Carrera', 'TasaEmpleabilidad': 'Tasa de empleo', 'AnioGraduacion.1': 'Cohorte'},
-                    color_discrete_sequence=px.colors.qualitative.Set2,  # Paleta amigable
-                    hover_data={
-                        'CarreraHomologada.1': True,
-                        'AnioGraduacion.1': True,
-                        'TasaEmpleabilidad': ':.2%',
-                        'empleados': True,
-                        'total': True
-                    },
-                    text_auto=False  # No mostrar valores sobre las barras
-                )
-                fig.update_layout(
-                    yaxis_title='Carrera',
-                    xaxis_title='Tasa de empleo',
-                    legend_title_text='Cohorte (Año Graduación)',
-                    legend=dict(
-                        orientation='h',          # leyenda horizontal
-                        yanchor='bottom',
-                        y=1.02,                   # justo arriba de la gráfica
-                        xanchor='center',
-                        x=0.5,                    # centrada horizontalmente
-                        title_font_size=12,       # tamaño de fuente título
-                        font=dict(size=11)        # tamaño de fuente etiquetas
-                    ),
-                    margin=dict(t=100, r=20),     # margen superior más grande para la leyenda
-                )
-                fig.update_yaxes(automargin=True)
-                st.plotly_chart(fig, use_container_width=True)
+    try:
+        cohortes = sorted(int(c) for c in cohortes_seleccionadas) if cohortes_seleccionadas else sorted(df_fil["AnioGraduacion.1"].dropna().unique())
+    except:
+        cohortes = sorted(cohortes_seleccionadas)
 
+    # 1. Denominador: todos los graduados (sin filtro Trabajo Formal)
+    df_total = (
+        df[df["AnioGraduacion.1"].isin(cohortes)]
+        .groupby(["CarreraHomologada.1", "AnioGraduacion.1", "IdentificacionBanner.1"], as_index=False)
+        .agg(total_registro=("IdentificacionBanner.1", "count"))
+    )
 
+    # 2. Numerador: solo empleados con filtro aplicado
+    df_fil_empleados = df_fil[df_fil["Esta_empleado"]]  # ya viene filtrado
+
+    df_empleado = (
+        df_fil_empleados
+        .groupby(["CarreraHomologada.1", "AnioGraduacion.1", "IdentificacionBanner.1"], as_index=False)
+        .agg(esta_empleado=("Esta_empleado", "max"))
+    )
+
+    # 3. Unir y calcular tasa
+    df_merge = df_total.merge(
+        df_empleado,
+        on=["CarreraHomologada.1", "AnioGraduacion.1", "IdentificacionBanner.1"],
+        how="left"
+    )
+    df_merge["esta_empleado"] = df_merge["esta_empleado"].fillna(0)
+
+    resumen = (
+        df_merge
+        .groupby(["CarreraHomologada.1", "AnioGraduacion.1"], as_index=False)
+        .agg(
+            empleados=("esta_empleado", "sum"),
+            total=("IdentificacionBanner.1", "nunique")
+        )
+    )
+    resumen = resumen[resumen["total"] > 0]
+    resumen["TasaEmpleabilidad"] = resumen["empleados"] / resumen["total"]
+
+    top_n = 10
+    colores = PALETA_PASTEL
+
+    if len(cohortes) > 1:
+        for i, coh in enumerate(cohortes):
+            df_c = (
+                resumen[resumen["AnioGraduacion.1"] == coh]
+                .sort_values("TasaEmpleabilidad", ascending=False)
+                .head(top_n)
+            )
+            fig = px.bar(
+                df_c,
+                x="TasaEmpleabilidad",
+                y="CarreraHomologada.1",
+                orientation="h",
+                title=f"Ranking Cohorte {coh} (Top {top_n})",
+                labels={
+                    "CarreraHomologada.1": "Carrera",
+                    "TasaEmpleabilidad": "Tasa de empleo",
+                },
+                text="TasaEmpleabilidad",
+                hover_data={"empleados": True, "total": True, "TasaEmpleabilidad": ":.2%"},
+                color_discrete_sequence=[colores[i % len(colores)]],
+            )
+            fig.update_traces(texttemplate="%{text:.1%}", textposition="outside")
+            fig.update_yaxes(autorange="reversed", automargin=True, title_text="Carrera")
+            fig.update_xaxes(title_text="Tasa de empleo", tickformat=".0%")
+            fig.update_layout(margin=dict(t=60, r=20, l=20))
+            st.plotly_chart(fig, use_container_width=True, key=f"ranking_coh_{coh}")
+
+        # Combinado
+        resumen_comb = (
+            resumen
+            .groupby("CarreraHomologada.1", as_index=False)
+            .agg(
+                empleados=("empleados", "sum"),
+                total=("total", "sum")
+            )
+        )
+        resumen_comb = resumen_comb[resumen_comb["total"] > 0]
+        resumen_comb["TasaEmpleabilidad"] = resumen_comb["empleados"] / resumen_comb["total"]
+        resumen_comb = (
+            resumen_comb
+            .sort_values("TasaEmpleabilidad", ascending=False)
+            .head(top_n)
+        )
+
+        fig_comb = px.bar(
+            resumen_comb,
+            x="TasaEmpleabilidad",
+            y="CarreraHomologada.1",
+            orientation="h",
+            title=f"Ranking Combinado Cohortes {', '.join(map(str, cohortes))} (Top {top_n})",
+            labels={
+                "CarreraHomologada.1": "Carrera",
+                "TasaEmpleabilidad": "Tasa de empleo",
+            },
+            text="TasaEmpleabilidad",
+            hover_data={"empleados": True, "total": True, "TasaEmpleabilidad": ":.2%"},
+            color_discrete_sequence=[colores[len(cohortes) % len(colores)]],
+        )
+        fig_comb.update_traces(texttemplate="%{text:.1%}", textposition="outside")
+        fig_comb.update_yaxes(autorange="reversed", automargin=True, title_text="Carrera")
+        fig_comb.update_xaxes(title_text="Tasa de empleo", tickformat=".0%")
+        fig_comb.update_layout(margin=dict(t=80, r=20, l=20))
+        st.plotly_chart(fig_comb, use_container_width=True, key="ranking_combined")
 
     else:
-        # Si solo hay una cohorte, o ninguna, mostrar ranking promedio como antes
-        resumen = df_fil.groupby(['CarreraHomologada.1', 'Periodo']).agg(
-            empleados=('Esta_empleado', 'sum'),
-            total=('IdentificacionBanner.1', 'nunique')
-        ).reset_index()
-        resumen = resumen[resumen['total'] > 0]
-        resumen['TasaQuimestral'] = resumen['empleados'] / resumen['total']
-        ranking = resumen.groupby('CarreraHomologada.1')['TasaQuimestral'].mean().reset_index()
-        ranking = ranking.sort_values('TasaQuimestral', ascending=False)
+        ranking = (
+            resumen
+            .sort_values("TasaEmpleabilidad", ascending=False)
+            .head(top_n)
+        )
+
         fig = px.bar(
             ranking,
-            x='CarreraHomologada.1',
-            y='TasaQuimestral',
-            title='Ranking de Carreras por Empleabilidad',
-            labels={'CarreraHomologada.1': 'Carrera', 'TasaQuimestral': 'Tasa promedio'},
-            color='TasaQuimestral'
+            x="TasaEmpleabilidad",
+            y="CarreraHomologada.1",
+            orientation="h",
+            title=f"Ranking de Carreras por Empleabilidad (Top {top_n})",
+            labels={
+                "CarreraHomologada.1": "Carrera",
+                "TasaEmpleabilidad": "Tasa de empleo",
+            },
+            text="TasaEmpleabilidad",
+            hover_data={"empleados": True, "total": True, "TasaEmpleabilidad": ":.2%"},
+            color_discrete_sequence=[PALETA_PASTEL[0]],
         )
-        fig.update_layout(xaxis_tickangle=-45, yaxis_title='Tasa promedio')
-        
-        st.plotly_chart(fig, use_container_width=True)
+        fig.update_traces(texttemplate="%{text:.1%}", textposition="outside")
+        fig.update_yaxes(autorange="reversed", automargin=True, title_text="Carrera")
+        fig.update_xaxes(title_text="Tasa de empleo", tickformat=".0%")
+        fig.update_layout(margin=dict(t=60, r=20, l=20), showlegend=False)
+        st.plotly_chart(fig, use_container_width=True, key="ranking_simple_top10")
 
 # --------------------------
 # NOTA
@@ -132,7 +183,7 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra el orden de carreras según su tasa de empleabilidad promedio.
+    Esta visualización muestra el orden de carreras según su tasa de empleabilidad promedio. El denominador considera todos los graduados por cohorte y carrera, sin importar su tipo de empleo o si tienen empleo; el numerador incluye solo quienes cumplen con el filtro seleccionado.
     """,
     nombre_filtro="Trabajo Formal",
     descripcion_filtro="""

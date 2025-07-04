@@ -2,7 +2,14 @@ import plotly.io as pio
 import streamlit as st
 
 # Definir la paleta personalizada (rosa y morado pastel)
-PALETA_PASTEL = ["#f7c6d9", "#d7bde2"]  # rosa pastel, morado pastel
+PALETA_PASTEL = [
+    "#D48BC0",  # rosa pastel
+    "#B07FD0",  # morado pastel
+    "#F2B5D4",  # rosa claro
+    "#C49DD9",  # lavanda
+    "#E0A2CB",  # rosa viejo
+    "#AA89CC",  # morado suave
+]
 
 
 def aplicar_tema_plotly():

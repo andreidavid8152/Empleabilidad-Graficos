@@ -12,40 +12,67 @@ st.title("📉 Riesgo de Desempleo por Cohorte")
 with st.spinner("Cargando datos..."):
     df_base = cargar_datos_empleabilidad()
 
-# Preprocesamiento
-df = df_base.copy()
-df['Esta_empleado'] = df['SALARIO.1'].notnull() | df['RUCEMP.1'].notnull()
+# 🏷️ Añadir columna de empleo
+df_base['Esta_empleado'] = df_base['SALARIO.1'].notnull() | df_base['RUCEMP.1'].notnull()
 
 # --------------------------
-# FILTROS
+# 1️⃣ FILTROS (incluye Trabajo Formal, sin Cohorte)
 # --------------------------
-df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte"])
+df_filtrado, selecciones = aplicar_filtros(
+    df_base.copy(),
+    incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Trabajo Formal"]
+)
 
-formal_check = st.checkbox("¿Solo empleo formal?", value=False)
 tipo_grafico = st.radio("Tipo de gráfico", options=["Líneas", "Barras"], horizontal=True)
 
 # --------------------------
-# CÁLCULO DE DESEMPLEO
+# 2️⃣ CÁLCULO DE DESEMPLEO
 # --------------------------
-if df_fil.empty:
+if df_filtrado.empty:
     st.warning("No hay datos disponibles con los filtros seleccionados.")
 else:
-    total = df_fil.groupby('AnioGraduacion.1')['IdentificacionBanner.1'].nunique()
+    # 2.1 Numerador: filtrado por Trabajo Formal y empleo
+    df_empleados = df_filtrado[df_filtrado["Esta_empleado"]]
 
-    if formal_check:
-        empleados_df = df_fil[df_fil['Empleo formal'].astype(str).str.upper() == 'EMPLEO FORMAL']
-    else:
-        empleados_df = df_fil[df_fil['Esta_empleado']]
+    # Si se aplicó filtro de "Trabajo Formal", respetarlo aquí
+    if selecciones['Trabajo Formal'] != "Todos":
+        df_empleados = df_empleados[df_empleados["Empleo formal"].astype(str) == selecciones['Trabajo Formal']]
 
-    empleados = empleados_df.groupby('AnioGraduacion.1')['IdentificacionBanner.1'].nunique()
+    empleados = (
+        df_empleados
+        .groupby("AnioGraduacion.1")["IdentificacionBanner.1"]
+        .nunique()
+    )
 
-    resumen = pd.DataFrame({'empleados': empleados, 'total': total}).reset_index()
-    resumen = resumen[resumen['total'] > 0]
-    resumen['desempleo'] = 1 - (resumen['empleados'] / resumen['total'])
-    resumen = resumen.sort_values('AnioGraduacion.1')
+    # 2.2 Denominador: todos los graduados según filtros, sin Trabajo Formal
+    df_total = df_base.copy()
+    if selecciones['Nivel'] != "Todos":
+        df_total = df_total[df_total['regimen.1'] == selecciones['Nivel']]
+    if selecciones['Oferta Actual'] != "Todos":
+        df_total = df_total[df_total['Oferta actual'] == selecciones['Oferta Actual']]
+    if selecciones['Facultad'] != "Todas":
+        df_total = df_total[df_total['FACULTAD'] == selecciones['Facultad']]
+    if selecciones['Carrera'] != "Todas":
+        df_total = df_total[df_total['CarreraHomologada.1'] == selecciones['Carrera']]
 
-    titulo = f'Tasa de desempleo por cohorte{" (solo empleo formal)" if formal_check else ""}'
+    total = (
+        df_total
+        .groupby("AnioGraduacion.1")["IdentificacionBanner.1"]
+        .nunique()
+    )
 
+    # 2.3 Construcción del resumen
+    resumen = (
+        pd.DataFrame({'empleados': empleados, 'total': total})
+        .reset_index()
+        .query("total > 0")
+        .assign(desempleo=lambda d: 1 - (d['empleados'] / d['total']))
+        .sort_values('AnioGraduacion.1')
+    )
+
+    titulo = "Tasa de desempleo por cohorte"
+
+    # 2.4 Gráfico
     if tipo_grafico == 'Barras':
         fig = px.bar(
             resumen,
@@ -71,11 +98,17 @@ else:
     st.plotly_chart(fig, use_container_width=True)
 
 # --------------------------
-# NOTA
+# 3️⃣ NOTA
 # --------------------------
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra la proporción de graduados sin afiliación en un periodo determinado, respecto al total de la cohorte..
-    """
+    Esta visualización muestra la proporción de graduados sin afiliación en un periodo determinado, respecto al total de la cohorte.
+    """,
+    nombre_filtro="Trabajo Formal",
+    descripcion_filtro="""
+    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
+    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
+    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
+    """,
 )
