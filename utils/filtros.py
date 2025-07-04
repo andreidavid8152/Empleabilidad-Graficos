@@ -100,7 +100,9 @@ def aplicar_filtros(df, incluir=None):
         selecciones['Carrera'] = carrera_sel
 
     if 'Cohorte' in incluir:
-        cohorte_sel = filtro_selectbox("Cohorte (Año Graduación)", sorted(df['AnioGraduacion.1'].dropna().unique()), "Cohorte", "Todos")
+        cohortes_disponibles = sorted(df['AnioGraduacion.1'].dropna().unique())
+        cohortes_filtradas = [c for c in cohortes_disponibles if str(c) != '2025']
+        cohorte_sel = filtro_selectbox("Cohorte (Año Graduación)", cohortes_filtradas, "Cohorte", "Todos")
         df = df if cohorte_sel == "Todos" else df[df['AnioGraduacion.1'] == cohorte_sel]
         selecciones['Cohorte'] = cohorte_sel
 
