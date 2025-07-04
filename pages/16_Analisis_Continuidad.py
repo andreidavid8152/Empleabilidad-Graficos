@@ -20,22 +20,34 @@ df_base["TIPO_TITULO"] = df_base["NIVEL ACADÉMICA"].apply(
 # === 2. Filtros dentro del cuerpo
 st.markdown("### 🔍 Selecciona filtros:")
 
-facultades = sorted(df_base["FACULTAD"].dropna().unique())
+# Filtro visual de facultades (sin afectar df_base)
+facultades = df_base["FACULTAD"].dropna().unique()
+facultades_filtradas = sorted([
+    fac for fac in facultades
+    if "posgrado" not in fac.lower() and fac.lower() != "sin registro"
+])
+
 col1, col2 = st.columns(2)
-
 with col1:
-    facultad_sel = st.selectbox("Facultad", ["Todas"] + facultades, key="facultad_filtro")
+    facultad_sel = st.selectbox("Facultad", ["Todas"] + facultades_filtradas, key="facultad_filtro")
 
+# Creamos df_filtrado para aplicar los filtros dinámicos
 df_filtrado = df_base.copy()
 if facultad_sel != "Todas":
     df_filtrado = df_filtrado[df_filtrado["FACULTAD"] == facultad_sel]
 
+# Filtro visual de carreras (basado en el dataframe filtrado por facultad)
+carreras_filtradas = sorted([
+    car for car in df_filtrado["CARRERA"].dropna().unique()
+    if "posgrado" not in car.lower() and car.lower() != "sin registro"
+])
 with col2:
-    carreras = sorted(df_filtrado["CARRERA"].dropna().unique())
-    carrera_sel = st.selectbox("Carrera", ["Todas"] + carreras, key="carrera_filtro")
+    carrera_sel = st.selectbox("Carrera", ["Todas"] + carreras_filtradas, key="carrera_filtro")
 
+# Aplicamos filtro de carrera solo si es distinto de "Todas"
 if carrera_sel != "Todas":
     df_filtrado = df_filtrado[df_filtrado["CARRERA"] == carrera_sel]
+
 
 # === 3. Cálculos
 udla = "UNIVERSIDAD DE LAS AMERICAS"

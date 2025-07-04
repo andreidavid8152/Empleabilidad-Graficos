@@ -1,118 +1,171 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import unicodedata
 from utils.carga_datos import cargar_datos_empleabilidad
 from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
+
+def quitar_acentos(s: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c)
+    )
+
+
 aplicar_tema_plotly()
 st.title("🔄 Transiciones de Empleo por Trimestre")
 
-# 🌀 Cargar datos
+# 🌀 1) Cargar datos
 with st.spinner("Cargando datos..."):
     df_base = cargar_datos_empleabilidad()
 
-# === Preprocesamiento específico ===
+# —————————————————————————————
+# 2) Preprocesamiento
+# —————————————————————————————
 df = df_base.copy()
-df['SALARIO.1'] = pd.to_numeric(df['SALARIO.1'], errors='coerce')
-df = df[df['Mes.1'].isin([2, 5, 9, 11])]  # Solo meses válidos
+df["SALARIO.1"] = pd.to_numeric(df["SALARIO.1"], errors="coerce")
 
-# Mantener por persona y mes el salario más alto
-duplicados = df.duplicated(subset=['IdentificacionBanner.1', 'Mes.1'], keep=False)
-df_multi = df[duplicados].copy().sort_values('SALARIO.1', ascending=False)
-df_multi = df_multi.drop_duplicates(subset=['IdentificacionBanner.1', 'Mes.1'], keep='first')
-df_uniq = df[~duplicados].copy()
-df = pd.concat([df_uniq, df_multi], ignore_index=True)
+meses_validos = [2, 5, 9, 11]
+df = df[df["Mes.1"].isin(meses_validos)]
 
-# Clasificar empleo formal según nuevos valores
-df['Empleo formal'] = df['Empleo formal'].astype(str).str.strip().str.upper()
+df = df.sort_values(
+    ["IdentificacionBanner.1", "Mes.1", "SALARIO.1"], ascending=[True, True, False]
+).drop_duplicates(subset=["IdentificacionBanner.1", "Mes.1"], keep="first")
 
-def clasificar_formalidad(valor):
-    if valor == 'RELACION DE DEPENDENCIA':
-        return 1  # Formal
-    elif valor in ['SIN RELACION DE DEPENDENCIA', 'AFILIACION VOLUNTARIA']:
-        return 0  # No formal
-    elif valor == 'DESCONOCIDO':
-        return None
-    else:
-        return None
+df["Empleo formal"] = (
+    df["Empleo formal"]
+    .astype(str)
+    .str.strip()
+    .apply(quitar_acentos)
+    .str.upper()
+    .replace({"SIN RELACION DE DEPENDENCIA": "AFILIACION VOLUNTARIA"})
+)
+df["Empleo formal"] = df["Empleo formal"].where(
+    df["Empleo formal"].isin(
+        ["DESCONOCIDO", "AFILIACION VOLUNTARIA", "RELACION DE DEPENDENCIA"]
+    ),
+    "DESCONOCIDO",
+)
 
-df['Formal'] = df['Empleo formal'].apply(clasificar_formalidad)
+# —————————————————————————————
+# 3) FILTROS (sin Trabajo Formal)
+# —————————————————————————————
+df_fil, selecciones = aplicar_filtros(
+    df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte"]
+)
 
-# --------------------------
-# FILTROS
-# --------------------------
-df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
+# —————————————————————————————
+# 4) SELECTBOX manual para Trabajo Formal
+# —————————————————————————————
+opc_formal = [
+    "Todos",
+    "DESCONOCIDO",
+    "AFILIACION VOLUNTARIA",
+    "RELACION DE DEPENDENCIA",
+]
+seleccion_formal = st.selectbox("Trabajo Formal", opc_formal, index=0)
 
-# --------------------------
-# GENERAR GRÁFICO DE TRANSICIONES
-# --------------------------
+# —————————————————————————————
+# 5) Pivot: uno por graduado y trimestre
+# —————————————————————————————
 if df_fil.empty:
-    st.warning("No hay datos disponibles con los filtros seleccionados.")
+    st.warning("No hay datos disponibles con esos filtros.")
 else:
-    pivot = df_fil.pivot(index='IdentificacionBanner.1', columns='Mes.1', values='Formal')
+    pivot = df_fil.pivot(
+        index="IdentificacionBanner.1", columns="Mes.1", values="Empleo formal"
+    )[meses_validos].fillna("DESCONOCIDO")
+    pivot.columns = ["Feb", "May", "Sep", "Nov"]
 
-    if not set([2, 5, 9, 11]).issubset(pivot.columns):
-        st.warning("No hay suficientes datos para calcular las transiciones.")
+    # —————————————————————————————
+    # 6) Calcular transiciones
+    # —————————————————————————————
+    trans = []
+    if seleccion_formal != "Todos":
+        for antes, despues, label in [
+            ("Feb", "May", "Q1→Q2"),
+            ("May", "Sep", "Q2→Q3"),
+            ("Sep", "Nov", "Q3→Q4"),
+        ]:
+            temp = pivot[[antes, despues]].copy()
+            temp = temp[temp[despues] == seleccion_formal]
+            temp = temp[temp[antes] != seleccion_formal]
+            temp["Trimestre"] = label
+            temp["Desde"] = temp[antes]
+            trans.append(temp[["Trimestre", "Desde"]])
+        df_trans = pd.concat(trans, ignore_index=True)
+        conteo = (
+            df_trans.groupby(["Trimestre", "Desde"]).size().reset_index(name="Cantidad")
+        )
     else:
-        pivot = pivot[[2, 5, 9, 11]]
-        pivot.columns = ['Feb', 'May', 'Sep', 'Nov']
+        for antes, despues, label in [
+            ("Feb", "May", "Q1→Q2"),
+            ("May", "Sep", "Q2→Q3"),
+            ("Sep", "Nov", "Q3→Q4"),
+        ]:
+            temp = pivot[[antes, despues]].copy()
+            temp = temp[temp[antes] != temp[despues]]
+            temp["Trimestre"] = label
+            temp["Transición"] = temp[antes] + " → " + temp[despues]
+            trans.append(temp[["Trimestre", "Transición"]])
+        df_trans = pd.concat(trans, ignore_index=True)
+        conteo = (
+            df_trans.groupby(["Trimestre", "Transición"])
+            .size()
+            .reset_index(name="Cantidad")
+        )
 
-        def clasificar(ant, act):
-            if pd.isna(ant) or pd.isna(act):
-                return 'Desconocido'
-            elif ant == 1 and act == 1:
-                return 'Permanece Formal'
-            elif ant == 0 and act == 0:
-                return 'Permanece Informal'
-            elif ant == 1 and act == 0:
-                return 'Pasa a Informal'
-            elif ant == 0 and act == 1:
-                return 'Pasa a Formal'
-            return 'Desconocido'
+    # —————————————————————————————
+    # 7) Calcular porcentaje por trimestre
+    # —————————————————————————————
+    total_por_trim = conteo.groupby("Trimestre")["Cantidad"].transform("sum")
+    conteo["PorcentajeTexto"] = (conteo["Cantidad"] / total_por_trim * 100).round(
+        2
+    ).astype(str) + "%"
 
-        transiciones = []
-        for (a, b), q in zip([('Feb', 'May'), ('May', 'Sep'), ('Sep', 'Nov')], ['Q1→Q2', 'Q2→Q3', 'Q3→Q4']):
-            temp = pivot[[a, b]].copy()
-            temp['Trimestre'] = q
-            temp['Transición'] = temp.apply(lambda row: clasificar(row[a], row[b]), axis=1)
-            transiciones.append(temp[['Trimestre', 'Transición']])
-
-        df_trans = pd.concat(transiciones)
-        # Calcular porcentaje por trimestre
-        conteo = df_trans.groupby(['Trimestre', 'Transición']).size().reset_index(name='Cantidad')
-        total_por_trimestre = conteo.groupby('Trimestre')['Cantidad'].transform('sum')
-        conteo['Porcentaje'] = (conteo['Cantidad'] / total_por_trimestre * 100).round(1)
-
+    # —————————————————————————————
+    # 8) Graficar con porcentaje en la barra, tooltip con COUNT
+    # —————————————————————————————
+    if seleccion_formal != "Todos":
         fig = px.bar(
             conteo,
-            x='Trimestre',
-            y='Porcentaje',
-            color='Transición',
-            text='Porcentaje',
-            title='Transiciones de empleo por trimestre (%)'
+            x="Trimestre",
+            y="Cantidad",
+            color="Desde",
+            text="PorcentajeTexto",
+            hover_data={"Cantidad": True, "Desde": True, "PorcentajeTexto": False},
+            title=f"Transiciones → {seleccion_formal} por trimestre",
         )
-        fig.update_layout(
-            barmode='stack',
-            yaxis_title='Porcentaje de graduados',
-            xaxis_title='Trimestre',
-            yaxis_ticksuffix='%'
+    else:
+        fig = px.bar(
+            conteo,
+            x="Trimestre",
+            y="Cantidad",
+            color="Transición",
+            text="PorcentajeTexto",
+            hover_data={"Cantidad": True, "Transición": True, "PorcentajeTexto": False},
+            title="Transiciones de empleo por trimestre (solo cambios)",
         )
-        fig.update_traces(textposition="inside")
-        st.plotly_chart(fig, use_container_width=True)
 
-# --------------------------
-# NOTA
-# --------------------------
+    fig.update_layout(
+        barmode="stack", xaxis_title="Trimestre", yaxis_title="Número de graduados"
+    )
+    fig.update_traces(textposition="inside")
+    st.plotly_chart(fig, use_container_width=True)
+
+# —————————————————————————————
+# 9) Nota
+# —————————————————————————————
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra el cambio de sector económico o tipo de empleador en el tiempo por parte del graduado.
+    Ahora los números dentro de las barras son porcentajes
+    (por trimestre), y el tooltip muestra la cuenta absoluta.
     """,
     nombre_filtro="Trabajo Formal",
     descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
+    <strong>Relación de Dependencia:</strong> Empleo formal bajo contrato.<br>
+    <strong>Afiliación Voluntaria:</strong> Independientes/emprendedores en IESS.<br>
+    <strong>Desconocido:</strong> Sin registro formal en ese trimestre.
     """,
 )

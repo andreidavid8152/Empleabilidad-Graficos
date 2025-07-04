@@ -195,11 +195,14 @@ else:
         freq,
         x="Mes",
         y="Cantidad",
+        text="Porcentaje",  # 👉 Mostrar porcentaje como texto sobre la barra
         custom_data=["Porcentaje"],
         labels={"Mes": "Meses desde la graduación", "Cantidad": "Número de estudiantes"},
         title="Distribución del Tiempo al Primer Empleo (Cohorte 2024)"
     )
     fig.update_traces(
+        texttemplate="%{text}%",  # 👉 Formato del texto en la barra
+        textposition="outside",   # 👉 Posición del texto fuera de la barra
         hovertemplate=(
             "Meses desde la graduación: <b>%{x}</b><br>"
             "Número de estudiantes: %{y}<br>"
