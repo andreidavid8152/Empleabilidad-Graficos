@@ -14,55 +14,91 @@ with st.spinner("Cargando datos..."):
 
 # Preprocesamiento
 df = df_base.copy()
-df['Empleo formal'] = df['Empleo formal'].astype(str).str.strip().str.upper()
-df['NOMEMP.1'] = df['NOMEMP.1'].fillna('SIN EMPRESA')
-df['Cantidad de empleados'] = pd.to_numeric(df['Cantidad de empleados'], errors='coerce')
-df['Cantidad de empleados'] = df['Cantidad de empleados'].fillna(0)
+df["SALARIO.1"] = pd.to_numeric(df["SALARIO.1"], errors="coerce")
+df["Empleo formal"] = df["Empleo formal"].astype(str).str.strip().str.upper()
+df["NOMEMP.1"] = df["NOMEMP.1"].fillna("SIN EMPRESA")
+df["Cantidad de empleados"] = pd.to_numeric(
+    df["Cantidad de empleados"], errors="coerce"
+).fillna(0)
+
+# --------------------------
+# Excluir 'DESCONOCIDO' en Trabajo Formal ANTES de construir filtros
+# --------------------------
+df = df[df["Empleo formal"] != "DESCONOCIDO"]
 
 # --------------------------
 # FILTROS
 # --------------------------
-df_fil, selecciones = aplicar_filtros(df, incluir=["Nivel", "Oferta Actual", "Facultad", "Carrera", "Cohorte", "Trabajo Formal"])
+df_fil, selecciones = aplicar_filtros(
+    df,
+    incluir=[
+        "Nivel",
+        "Oferta Actual",
+        "Facultad",
+        "Carrera",
+        "Cohorte",
+        "Trabajo Formal",
+    ],
+)
 
 # --------------------------
 # FILTROS ADICIONALES
 # --------------------------
 sector_sel = st.selectbox(
-    "Sector Económico",
-    ["Todos"] + sorted(df_fil['SECTOR'].dropna().unique())
+    "Sector Económico", ["Todos"] + sorted(df_fil["SECTOR"].dropna().unique())
 )
-df_fil = df_fil if sector_sel == "Todos" else df_fil[df_fil['SECTOR'] == sector_sel]
+if sector_sel != "Todos":
+    df_fil = df_fil[df_fil["SECTOR"] == sector_sel]
 
-tam_min = int(df_fil['Cantidad de empleados'].min())
-tam_max = int(df_fil['Cantidad de empleados'].max())
+tam_min = int(df_fil["Cantidad de empleados"].min())
+tam_max = int(df_fil["Cantidad de empleados"].max())
 tamano_rango = st.slider(
     "Tamaño de empresa (Cantidad de empleados)",
-    min_value=tam_min, max_value=tam_max,
-    value=(tam_min, tam_max), step=1
+    min_value=tam_min,
+    max_value=tam_max,
+    value=(tam_min, tam_max),
+    step=1,
 )
 df_fil = df_fil[
-    (df_fil['Cantidad de empleados'] >= tamano_rango[0]) &
-    (df_fil['Cantidad de empleados'] <= tamano_rango[1])
+    (df_fil["Cantidad de empleados"] >= tamano_rango[0])
+    & (df_fil["Cantidad de empleados"] <= tamano_rango[1])
 ]
 
 # --------------------------
-# GRÁFICO DE EMPRESAS
+# LÓGICA DE ÚNICO POR GRADUADO
 # --------------------------
-top_empresas = df_fil['NOMEMP.1'].value_counts().nlargest(10).reset_index()
-top_empresas.columns = ['Empresa', 'Contrataciones']
+df_emp_unicos = df_fil.sort_values(
+    ["IdentificacionBanner.1", "Mes.1", "SALARIO.1"], ascending=[True, False, False]
+).drop_duplicates(subset="IdentificacionBanner.1", keep="first")
 
-if top_empresas.empty:
-    st.warning("No hay datos disponibles para esta combinación de filtros.")
-else:
-    fig = px.bar(
-        top_empresas,
-        x='Empresa',
-        y='Contrataciones',
-        text='Contrataciones',
-        title='Top 10 empresas que contratan graduados'
-    )
-    fig.update_layout(yaxis_title='Número de graduados contratados')
-    st.plotly_chart(fig, use_container_width=True)
+# --------------------------
+# CÁLCULO DEL TOP Y PORCENTAJES
+# --------------------------
+top_empresas = df_emp_unicos["NOMEMP.1"].value_counts().nlargest(10).reset_index()
+top_empresas.columns = ["Empresa", "Contrataciones"]
+
+total_unicos = df_emp_unicos.shape[0]
+top_empresas["PorcentajeTexto"] = (
+    top_empresas["Contrataciones"] / total_unicos * 100
+).round(2).astype(str) + "%"
+
+# --------------------------
+# GRÁFICO DE EMPRESAS (con texto en %)
+# --------------------------
+fig = px.bar(
+    top_empresas,
+    x="Empresa",
+    y="Contrataciones",
+    text="PorcentajeTexto",
+    title="Top 10 empresas que contratan graduados",
+    hover_data={"PorcentajeTexto": False},
+)
+fig.update_layout(
+    yaxis_title="Número de graduados contratados",
+    xaxis={"categoryorder": "total descending"},
+)
+fig.update_traces(textposition="outside")
+st.plotly_chart(fig, use_container_width=True)
 
 # --------------------------
 # NOTA
@@ -70,12 +106,14 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra la relación entre graduados y principales empleadores institucionales.
+    Para cada graduado se toma su registro del mes más reciente de empleo; 
+    si en ese mes hay duplicados, se elige el de mayor salario. 
+    Las etiquetas en las barras representan el porcentaje que cada empresa 
+    aporta al total de graduados considerados. 
     """,
     nombre_filtro="Trabajo Formal",
     descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
+    <strong>Relación de Dependencia:</strong> Graduados contratados formalmente.<br>
+    <strong>Afiliación Voluntaria:</strong> Autoempleo formal.<br>
     """,
 )

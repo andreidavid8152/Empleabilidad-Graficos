@@ -40,9 +40,79 @@ df_fil = df_fil[
     df_fil['sector_actual'].isin(sectores_seleccionados)
 ]
 
+
 # === Tabla general de transiciones ===
 st.subheader("📌 Tabla de transiciones generales")
-tabla_general = df_fil.groupby(['sector_anterior', 'sector_actual']).size().reset_index(name='Cantidad')
+tabla_general = (
+    df_fil.groupby(["sector_anterior", "sector_actual"])
+    .size()
+    .reset_index(name="Cantidad")
+    .rename(
+        columns={"sector_anterior": "Sector Anterior", "sector_actual": "Sector Actual"}
+    )
+    .sort_values("Cantidad", ascending=False)
+)
+
+# --------------------------
+# TARJETAS INSIGHT DE SECTORES MÁS COMUNES
+# --------------------------
+if not tabla_general.empty:
+    # Sector del que más se cambian
+    mas_salidas = (
+        tabla_general.groupby("Sector Anterior")["Cantidad"]
+        .sum()
+        .sort_values(ascending=False)
+        .idxmax()
+    )
+
+    # Sector al que más se cambian
+    mas_llegadas = (
+        tabla_general.groupby("Sector Actual")["Cantidad"]
+        .sum()
+        .sort_values(ascending=False)
+        .idxmax()
+    )
+
+    texto_salidas = f"El sector desde el que más se cambian los graduados es <strong>{mas_salidas}</strong>."
+    texto_llegadas = f"El sector al que más se trasladan los graduados es <strong>{mas_llegadas}</strong>."
+
+    st.markdown(
+        f"""
+    <div style="
+        background-color: #fdf0f6;
+        border-left: 6px solid #d8b4e2;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-top: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    ">
+        <p style="margin: 0; font-size: 1.05rem;">
+            <strong>📤 Insight:</strong><br>{texto_salidas}
+        </p>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+    <div style="
+        background-color: #fdf0f6;
+        border-left: 6px solid #AA89CC;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-top: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    ">
+        <p style="margin: 0; font-size: 1.05rem;">
+            <strong>📥 Insight:</strong><br>{texto_llegadas}
+        </p>
+    </div> <br/>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
 if tabla_general.empty:
     st.info("No hay transiciones entre los sectores seleccionados.")
 else:
@@ -50,10 +120,28 @@ else:
 
 # === Tabla por graduado ===
 st.subheader("🧑‍🎓 Tabla de transiciones por graduado")
-tabla_graduado = df_fil[[
-    'IdentificacionBanner.1', 'Estudiante.1', 'FECINGAFI.1',
-    'sector_anterior', 'sector_actual'
-]].sort_values(by=['IdentificacionBanner.1', 'FECINGAFI.1'])
+tabla_graduado = (
+    df_fil[
+        [
+            "IdentificacionBanner.1",
+            "Estudiante.1",
+            "FECINGAFI.1",
+            "sector_anterior",
+            "sector_actual",
+        ]
+    ]
+    .rename(
+        columns={
+            "IdentificacionBanner.1": "Identificacion",
+            "Estudiante.1": "Estudiante",
+            "FECINGAFI.1": "Fecha Ingreso Afiliacion",
+            "sector_anterior": "Sector Anterior",
+            "sector_actual": "Sector Actual",
+        }
+    )
+    .sort_values(by=["Identificacion", "Fecha Ingreso Afiliacion"])
+)
+
 
 if tabla_graduado.empty:
     st.info("No hay transiciones registradas por estudiante con los filtros actuales.")
