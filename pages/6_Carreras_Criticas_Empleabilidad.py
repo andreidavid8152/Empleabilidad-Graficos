@@ -9,7 +9,7 @@ from utils.filtros import aplicar_filtros
 import plotly.express as px
 
 aplicar_tema_plotly()
-st.title("⚠️ Carreras Críticas por Baja Empleabilidad")
+st.title("Carreras en Estado Crítico de Empleabilidad")
 
 # 🌀 Cargar datos sin procesar
 with st.spinner("Cargando datos..."):
@@ -110,7 +110,21 @@ else:
 # --------------------------
 mostrar_tarjeta_nota(
     texto_principal="""
-    <strong>📌 Nota:</strong><br>
-    Esta visualización muestra las carreras con baja empleabilidad y alto riesgo de desempleo..
+    <strong>📌 Nota aclaratoria:</strong><br>
+    Esta visualización identifica las carreras con empleabilidad crítica, tomando en cuenta dos factores:<br>
+    <ul>
+    <li>Tasa de empleabilidad más baja registrada en los últimos periodos (<em>MinTasa</em>).</li>
+    <li>Tendencia de la empleabilidad: si la inserción laboral está mejorando, empeorando o permanece estable (<em>Pendiente</em>).</li>
+    </ul>
+    <strong>Se considera alerta cuando la empleabilidad cae por debajo del umbral definido.</strong><br><br>
+    <strong>¿Qué se considera empleo formal?</strong><br>
+    Graduados afiliados, ya sea:
+    <ul>
+    <li>Con contrato laboral (relación de dependencia), o</li>
+    <li>Afiliados por cuenta propia (emprendedores, independientes, etc.).</li>
+    </ul>
+    <strong>¿Cómo interpretar esta visualización?</strong><br>
+    Una carrera con baja empleabilidad y tendencia negativa requiere atención prioritaria, ya que combina un bajo nivel de inserción laboral con una dinámica que empeora con el tiempo.<br>
+    En cambio, una carrera con baja empleabilidad, pero tendencia positiva podría estar en proceso de recuperación.
     """
 )

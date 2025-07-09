@@ -5,7 +5,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("Distribución de Graduados por Tamaño de Empresa")
+st.title("Distribución de Graduados por el Tamaño de la Empresa")
 
 # 🌀 Cargar datos
 with st.spinner("Cargando datos..."):
@@ -52,7 +52,7 @@ df_fil, selecciones = aplicar_filtros(
 )
 
 # —————————————————————————————
-# Filtro manual de Trimestre (debajo de Trabajo Formal)
+# Filtro manual de Trimestre
 # —————————————————————————————
 opciones_trimestre = ["Todos", "Q1", "Q2", "Q3", "Q4"]
 trimestre_sel = st.selectbox(
@@ -73,11 +73,10 @@ if trimestre_sel != "Todos":
 if df_fil.empty:
     st.warning("No hay datos disponibles con los filtros seleccionados.")
 else:
-    # Reducir a un registro por graduado:
-    #   - primero ordena por Mes.1 desc (o el trimestre seleccionado)
-    #   - luego dentro del mismo mes por SALARIO.1 desc (salario más alto)
+    # Reducir a un registro por graduado
     df_emp_unicos = df_fil.sort_values(
-        ["IdentificacionBanner.1", "Mes.1", "SALARIO.1"], ascending=[True, False, False]
+        ["IdentificacionBanner.1", "Mes.1", "SALARIO.1"],
+        ascending=[True, False, False],
     ).drop_duplicates(subset="IdentificacionBanner.1", keep="first")
 
     # Conteo absoluto por tamaño de empresa
@@ -97,11 +96,68 @@ else:
     )
     conteo.columns = ["Tamaño Empresa", "Número de Graduados"]
 
-    # Porcentaje sobre total de graduados únicos considerados
+    # Porcentaje sobre total de graduados únicos
     total_unicos = df_emp_unicos["IdentificacionBanner.1"].nunique()
     conteo["PorcentajeTexto"] = (
         conteo["Número de Graduados"] / total_unicos * 100
     ).round(2).astype(str) + "%"
+
+    # —————————————————————————————
+    # Insight card dinámico
+    # —————————————————————————————
+    top_row = conteo.loc[conteo["Número de Graduados"].idxmax()]
+    tipo_raw = top_row["Tamaño Empresa"].split(" (")[
+        0
+    ]  # "Microempresa", "Pequeña", etc.
+    num_graduados_top = int(top_row["Número de Graduados"])
+    tipo_lower = tipo_raw.lower()
+
+    # Frase adicional según la categoría principal
+    if tipo_raw == "Grande":
+        frase_extra = (
+            "Aunque las grandes empresas lideran, también hay presencia "
+            "relevante en otros tamaños."
+        )
+    elif tipo_raw == "Microempresa":
+        frase_extra = (
+            "A pesar de su predominio, muchos graduados también se desempeñan "
+            "en empresas de mayor tamaño."
+        )
+    elif tipo_raw == "Pequeña":
+        frase_extra = (
+            "Las pequeñas empresas destacan como principal empleador, "
+            "aunque no son la única opción."
+        )
+    elif tipo_raw == "Mediana":
+        frase_extra = (
+            "Las empresas medianas son la opción dominante, "
+            "pero existe reparto significativo en extremos."
+        )
+    else:
+        frase_extra = ""
+
+    texto_insight = (
+        f"📊<strong>{num_graduados_top} de cada {total_unicos} graduados</strong> con empleo formal "
+        f"trabaja en {tipo_lower}. {frase_extra}"
+    )
+
+    st.markdown(
+        f"""
+        <div style="
+            background-color: #fdf0f6;
+            border-left: 6px solid #d8b4e2;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        ">
+            <p style="margin: 0; font-size: 1.05rem;">
+                {texto_insight}
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # —————————————————————————————
     # Gráfico de barras
@@ -129,7 +185,6 @@ else:
         yaxis_title="Número de Graduados",
     )
     fig.update_traces(textposition="inside")
-
     st.plotly_chart(fig, use_container_width=True)
 
 # —————————————————————————————
@@ -137,13 +192,14 @@ else:
 # —————————————————————————————
 mostrar_tarjeta_nota(
     texto_principal="""
-    <strong>📌 Nota:</strong><br>
-    Clasificación de empleadores según número de afiliados (micro, pequeña, mediana, grande).
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia:</strong> Graduados con contrato formal.<br>
-    <strong>Afiliación Voluntaria:</strong> Independientes/emprendedores.<br>
-    <strong>Desconocido:</strong> Sin registro formal de empleo.
-    """,
+    <strong>📌 Nota aclaratoria:</strong><br>
+    Esta visualización muestra la distribución de graduados con empleo formal según el tamaño de la empresa en la que están trabajando, clasificada por número de trabajadores registrados:<br>
+    <ul>
+      <li><strong>Microempresa:</strong> 1 a 10 afiliados</li>
+      <li><strong>Pequeña empresa:</strong> 11 a 50 afiliados</li>
+      <li><strong>Mediana empresa:</strong> 51 a 200 afiliados</li>
+      <li><strong>Gran empresa:</strong> más de 200 afiliados</li>
+    </ul>
+    Los porcentajes en las barras indican la proporción de graduados que trabajan en empresas de cada tamaño.
+    """
 )

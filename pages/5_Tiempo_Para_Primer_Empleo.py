@@ -14,7 +14,7 @@ from utils.filtros import aplicar_filtros
 # AJUSTES ESTÉTICOS
 # ------------------------------------------------------------------
 aplicar_tema_plotly()
-st.title("⏱️ Tiempo al Primer Empleo desde la Graduación - 2024")
+st.title("Tiempo para el primer empleo")
 
 # ------------------------------------------------------------------
 # 1. CARGA Y PRE-PROCESAMIENTO
@@ -127,6 +127,27 @@ sinemp_count   = int(mask_noemp.sum())
 # ------------------------------------------------------------------
 # 5.1 TARJETA DE INSIGHT
 # ------------------------------------------------------------------
+
+
+def construir_mensaje_insight(facultad, carrera, mes_top):
+    # Decide si mostrar "apenas" según el número de meses
+    mes_num = 0 if mes_top == "menos de un mes" else int(mes_top.split()[0])
+    apenas = "apenas " if mes_num <= 2 else ""
+    mes_frase = f"<strong>{apenas}{mes_top}</strong> después de graduarse."
+    if carrera and carrera != "Todas":
+        return (
+            f"Un egresado de la <strong>Carrera de {carrera}</strong> consigue su primer empleo formal, "
+            f"en promedio, {mes_frase}"
+        )
+    elif facultad and facultad != "Todas":
+        return (
+            f"Un egresado de la <strong>Facultad de {facultad}</strong> consigue su primer empleo formal, "
+            f"en promedio, {mes_frase}"
+        )
+    else:
+        return f"Un egresado consigue su primer empleo formal, en promedio, {mes_frase}"
+
+
 df_plot = df_filtrado[mask_postgrad].copy()
 if not df_plot.empty:
     df_plot["Meses al primer empleo"] = pd.to_numeric(
@@ -134,35 +155,27 @@ if not df_plot.empty:
     )
     df_plot["MesNum"] = df_plot["Meses al primer empleo"].fillna(0).astype(int)
     df_plot["MesText"] = df_plot["MesNum"].apply(
-        lambda x: "Menos de un mes" if x == 0 else f"{x} mes{'es' if x != 1 else ''}"
+        lambda x: "menos de un mes" if x == 0 else f"{x} mes{'es' if x != 1 else ''}"
     )
 
     freq = df_plot["MesText"].value_counts().reset_index()
     freq.columns = ["Mes", "Cantidad"]
     freq["Cantidad"] = freq["Cantidad"].astype(int)
-    freq["Prioridad"] = freq["Mes"].apply(lambda m: 0 if m == "Menos de un mes" else 1)
-    freq["MesNum"]     = freq["Mes"].apply(
-        lambda m: 0 if m == "Menos de un mes" else int(m.split()[0])
+    freq["Prioridad"] = freq["Mes"].apply(lambda m: 0 if m == "menos de un mes" else 1)
+    freq["MesNum"] = freq["Mes"].apply(
+        lambda m: 0 if m == "menos de un mes" else int(m.split()[0])
     )
     freq = freq.sort_values(
-        by=["Cantidad", "Prioridad", "MesNum"],
-        ascending=[False, True, True]
+        by=["Cantidad", "Prioridad", "MesNum"], ascending=[False, True, True]
     )
     mes_top = freq.iloc[0]["Mes"].lower()
 
     fac = selecciones.get("Facultad")
     car = selecciones.get("Carrera")
-    if car and car != "Todas":
-        sujeto = f"un egresado de la carrera {car}"
-    elif fac and fac != "Todas":
-        sujeto = f"un egresado de la facultad {fac}"
-    else:
-        sujeto = "un egresado"
+    texto_mensaje = construir_mensaje_insight(fac, car, mes_top)
 
-    texto_mensaje = (
-        f"A {sujeto} le toma en promedio {mes_top} conseguir empleo después de graduarse."
-    )
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <div style="
         background-color: #fdf0f6;
         border-left: 6px solid #d8b4e2;
@@ -175,7 +188,9 @@ if not df_plot.empty:
             <strong>📊 Insight:</strong><br>{texto_mensaje}
         </p>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
 # ------------------------------------------------------------------
 # 6. VISUALIZACIÓN
@@ -185,7 +200,7 @@ if df_plot.empty:
 else:
     freq["Porcentaje"] = (freq["Cantidad"] / freq["Cantidad"].sum() * 100).round(2)
     meses_vals = sorted({int(v) for v in df_plot["MesNum"] if v > 0})
-    etiquetas  = ["Menos de un mes"] + [
+    etiquetas  = ["menos de un mes"] + [
         f"{m} mes{'es' if m != 1 else ''}" for m in meses_vals
     ]
     freq["Mes"] = pd.Categorical(freq["Mes"], categories=etiquetas, ordered=True)
@@ -220,14 +235,8 @@ else:
 # ------------------------------------------------------------------
 mostrar_tarjeta_nota(
     texto_principal="""
-<strong>📌 Nota:</strong><br>
-Meses promedio desde la graduación hasta el primer registro laboral formal. (Solo 2024)
-""",
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-<strong>Relación de Dependencia:</strong> Graduados contratados formalmente.<br>
-<strong>Afiliado Voluntario:</strong> Autoafiliados al IESS (emprendedores, independientes, etc.).<br>
-<strong>Desconocido:</strong> Sin información laboral registrada (sin empleo formal, inactivos,<br>
-trabajando fuera del país o en sectores no reportados).
-"""
+    <strong>📌 Nota:</strong><br>
+    Esta visualización muestra cuántos meses, en promedio, pasan desde la graduación hasta que los egresados de la cohorte 2024 consiguen su primer empleo formal registrado.<br/><br/>
+    Se consideran como empleo formal aquellos casos en los que existe una afiliación al IESS, ya sea por contrato laboral o por cuenta propia. 
+    """
 )

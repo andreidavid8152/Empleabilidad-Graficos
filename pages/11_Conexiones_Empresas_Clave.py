@@ -6,7 +6,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("🏢 Conexiones con Empresas Clave")
+st.title("Conexiones con Empresas Clave")
 
 # 🌀 Cargar datos
 with st.spinner("Cargando datos..."):
@@ -106,14 +106,7 @@ st.plotly_chart(fig, use_container_width=True)
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Para cada graduado se toma su registro del mes más reciente de empleo; 
-    si en ese mes hay duplicados, se elige el de mayor salario. 
-    Las etiquetas en las barras representan el porcentaje que cada empresa 
-    aporta al total de graduados considerados. 
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia:</strong> Graduados contratados formalmente.<br>
-    <strong>Afiliación Voluntaria:</strong> Autoempleo formal.<br>
-    """,
+    Esta visualización muestra las principales empresas contratantes de graduados.<br>
+    Las etiquetas sobre las barras representan el porcentaje de graduados que trabaja en cada empresa, respecto al total considerado. 
+    """
 )

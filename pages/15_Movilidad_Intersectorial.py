@@ -5,7 +5,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("📊 Movilidad Intersectorial")
+st.title("Movilidad Intersectorial")
 
 # === Cargar datos con spinner ===
 with st.spinner("Cargando datos..."):
@@ -154,12 +154,8 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra los cambios de sector económico entre empleos consecutivos en la trayectoria del graduado.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
-    """,
+    Esta visualización muestra los cambios de sector económico que ocurren entre empleos consecutivos en la trayectoria laboral de los graduados. Permite identificar si los egresados permanecen en un mismo sector productivo o si se movilizan entre industrias distintas a lo largo del tiempo. 
+    <br><br>
+    Este análisis ayuda a entender el nivel de especialización o diversificación en la inserción laboral. 
+    """
 )

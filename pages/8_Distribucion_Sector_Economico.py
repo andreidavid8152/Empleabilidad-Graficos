@@ -5,7 +5,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("Distribución de Graduados por Sector Económico")
+st.title("Distribución por Sector Económico")
 
 # 🌀 Cargar datos sin procesar
 with st.spinner("Cargando datos..."):
@@ -78,12 +78,9 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra la clasificación del empleo según la actividad económica de la empresa (CIIU Rev.4).
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
-    """,
+    Esta visualización muestra en qué sectores económicos están empleados formalmente los graduados, según la clasificación de actividades económicas CIIU Rev. 4.<br>
+    Cada barra representa el número de graduados registrados en empresas de un sector específico durante el año analizado.<br><br>
+    <strong>¿Cómo interpretar este gráfico?</strong><br>
+    Permite conocer en qué ramas de la economía se insertan los graduados, identificar los sectores con mayor concentración y detectar áreas con baja o nula presencia laboral formal.
+    """
 )

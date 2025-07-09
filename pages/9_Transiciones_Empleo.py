@@ -14,7 +14,7 @@ def quitar_acentos(s: str) -> str:
 
 
 aplicar_tema_plotly()
-st.title("🔄 Transiciones de Empleo por Trimestre")
+st.title("Transiciones de Empleo")
 
 # 🌀 1) Cargar datos
 with st.spinner("Cargando datos..."):
@@ -77,10 +77,9 @@ else:
     )[meses_validos].fillna("DESCONOCIDO")
     pivot.columns = ["Feb", "May", "Sep", "Nov"]
 
-    # —————————————————————————————
-    # 6) Calcular transiciones
-    # —————————————————————————————
+    # 6) Calcular transiciones (incluyendo permanencias)
     trans = []
+
     if seleccion_formal != "Todos":
         for antes, despues, label in [
             ("Feb", "May", "Q1→Q2"),
@@ -88,15 +87,28 @@ else:
             ("Sep", "Nov", "Q3→Q4"),
         ]:
             temp = pivot[[antes, despues]].copy()
-            temp = temp[temp[despues] == seleccion_formal]
-            temp = temp[temp[antes] != seleccion_formal]
-            temp["Trimestre"] = label
-            temp["Desde"] = temp[antes]
-            trans.append(temp[["Trimestre", "Desde"]])
+
+            # cambios hacia el estado seleccionado
+            cambios = temp[
+                (temp[despues] == seleccion_formal) & (temp[antes] != seleccion_formal)
+            ].copy()
+            cambios["Trimestre"] = label
+            cambios["Desde"] = cambios[antes]
+
+            # permanencias en el mismo estado
+            perm = temp[
+                (temp[despues] == seleccion_formal) & (temp[antes] == seleccion_formal)
+            ].copy()
+            perm["Trimestre"] = label
+            perm["Desde"] = "PERMANECE"
+
+            trans.append(pd.concat([cambios, perm])[["Trimestre", "Desde"]])
+
         df_trans = pd.concat(trans, ignore_index=True)
         conteo = (
             df_trans.groupby(["Trimestre", "Desde"]).size().reset_index(name="Cantidad")
         )
+
     else:
         for antes, despues, label in [
             ("Feb", "May", "Q1→Q2"),
@@ -104,10 +116,19 @@ else:
             ("Sep", "Nov", "Q3→Q4"),
         ]:
             temp = pivot[[antes, despues]].copy()
-            temp = temp[temp[antes] != temp[despues]]
-            temp["Trimestre"] = label
-            temp["Transición"] = temp[antes] + " → " + temp[despues]
-            trans.append(temp[["Trimestre", "Transición"]])
+
+            # cambios entre diferentes estados
+            cambios = temp[temp[antes] != temp[despues]].copy()
+            cambios["Trimestre"] = label
+            cambios["Transición"] = cambios[antes] + " → " + cambios[despues]
+
+            # permanencias (mismo estado)
+            perm = temp[temp[antes] == temp[despues]].copy()
+            perm["Trimestre"] = label
+            perm["Transición"] = perm[antes] + " → " + perm[despues]
+
+            trans.append(pd.concat([cambios, perm])[["Trimestre", "Transición"]])
+
         df_trans = pd.concat(trans, ignore_index=True)
         conteo = (
             df_trans.groupby(["Trimestre", "Transición"])
@@ -159,13 +180,21 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Ahora los números dentro de las barras son porcentajes
-    (por trimestre), y el tooltip muestra la cuenta absoluta.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia:</strong> Empleo formal bajo contrato.<br>
-    <strong>Afiliación Voluntaria:</strong> Independientes/emprendedores en IESS.<br>
-    <strong>Desconocido:</strong> Sin registro formal en ese trimestre.
+    Esta visualización muestra la dinámica del empleo formal de los graduados entre trimestres del año 2024, incluyendo tanto:
+    <ul>
+    <li>Los casos donde hubo transición entre estados laborales (por ejemplo, de independiente a empleo con contrato), como</li>
+    <li>Aquellos que mantuvieron el mismo estado de un trimestre a otro.</li>
+    </ul>
+    Cada barra representa los cambios ocurridos entre dos trimestres consecutivos. Está desglosada por tipo de transición.<br>
+    Los valores dentro de las barras indican el porcentaje de cada cambio respecto al total de movimientos observados en ese periodo.<br>
+    Al pasar el cursor sobre cada sección se muestra la cantidad exacta de graduados involucrados.<br>
+    Estados laborales considerados:
+    <ul>
+    <li><strong>Relación de Dependencia:</strong> empleo formal con contrato.</li>
+    <li><strong>Afiliación Voluntaria:</strong> trabajadores independientes afiliados.</li>
+    <li><strong>Desconocido:</strong> sin afiliación formal registrada (desempleo, informalidad, inactividad o trabajo fuera del país).</li>
+    </ul>
+    <strong>¿Cómo interpretar este gráfico?</strong><br>
+    Permite identificar qué tan estables son las trayectorias laborales, cuántos egresados entran o salen del empleo formal, y qué rutas laborales son más frecuentes a lo largo del año.
     """,
 )

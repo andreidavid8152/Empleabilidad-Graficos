@@ -11,7 +11,7 @@ from utils.filtros import aplicar_filtros
 # AJUSTES GLOBALES
 # ------------------------------------------------------------------
 aplicar_tema_plotly()
-st.title("🔄 Índice de Rotación en el Primer Año")
+st.title("Índice de Rotación")
 
 # ------------------------------------------------------------------
 # 1. CARGA Y BLOQUEO DE COHORTE 2024
@@ -152,12 +152,8 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra el número promedio de cambios de empleador por graduado en un periodo.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
-    """,
+    Esta visualización muestra el índice de rotación laboral en el primer año desde la graduación, considerando únicamente a los graduados de la cohorte 2024 que sí consiguieron empleo formal durante 2024. 
+    <br><br>
+    El indicador refleja el porcentaje de graduados que cambió de empleador al menos una vez en ese año. Un valor más alto puede sugerir inestabilidad laboral, búsqueda de mejores condiciones o trabajos de corta duración. 
+    """
 )
