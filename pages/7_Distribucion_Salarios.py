@@ -6,7 +6,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("Distribución de Salarios por Periodo")
+st.title("Distribución de Salarios")
 
 # 🌀 Cargar datos
 with st.spinner("Cargando datos..."):
@@ -85,43 +85,53 @@ if not df_fil.empty:
     ordered_qs = ["Q1", "Q2", "Q3", "Q4"]
     values = [quarter_means.get(q, 0) for q in ordered_qs]
     mean_salary = sum(values) / len(ordered_qs)
-
-    # construir sujeto según filtros activos
-    car = selecciones.get("Carrera")
+    # construir mensaje según filtros activos
     fac = selecciones.get("Facultad")
+    car = selecciones.get("Carrera")
     coh = selecciones.get("Cohorte")
-
-    if car and car != "Todas":
-        context = f"los egresados de {car}"
+    detalle = ""
+    if (
+        coh and coh != "Todas" and coh != "Todos"
+    ):  # <- CAMBIO AQUÍ: agregamos coh != "Todos"
+        # Cuando está filtrado por cohorte, la cohorte siempre tiene prioridad
+        if fac and fac != "Todas" and car and car != "Todas":
+            detalle = f"de la cohorte <strong>{coh}</strong> de la Facultad <strong>{fac}</strong> de la carrera <strong>{car}</strong>"
+        elif fac and fac != "Todas":
+            detalle = f"de la cohorte <strong>{coh}</strong> de la Facultad <strong>{fac}</strong>"
+        elif car and car != "Todas":
+            detalle = f"de la cohorte <strong>{coh}</strong> de la carrera <strong>{car}</strong>"
+        else:
+            detalle = f"de la cohorte <strong>{coh}</strong>"
+    elif fac and fac != "Todas" and car and car != "Todas":
+        detalle = f"de la Facultad <strong>{fac}</strong> de la carrera <strong>{car}</strong>"
     elif fac and fac != "Todas":
-        context = f"los egresados de la facultad {fac}"
+        detalle = f"de la Facultad <strong>{fac}</strong>"
+    elif car and car != "Todas":
+        detalle = f"de la carrera <strong>{car}</strong>"
     else:
-        context = "los egresados"
-
-    if coh and coh != "Todas":
-        context = f"{context} de la cohorte {coh}"
-
-    sujeto = f"El salario promedio anual de {context}"
+        detalle = ""
     texto_insight = (
-        f"{sujeto} es de <strong>${mean_salary:,.2f}</strong> mensuales")
-
+        f"<strong>📊 El salario</strong> promedio mensual de un graduado "
+        f"{detalle + ' ' if detalle else ''}con empleo formal "
+        f"<strong>es de ${mean_salary:,.2f}</strong>."
+    )
     st.markdown(
-            f"""
-    <div style="
-        background-color: #fdf0f6;
-        border-left: 6px solid #d8b4e2;
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    ">
-        <p style="margin: 0; font-size: 1.05rem;">
-            <strong>📊 Insight:</strong><br>{texto_insight}
-        </p>
-    </div>
-    """,
-            unsafe_allow_html=True,
-        )
+        f"""
+        <div style="
+            background-color: #fdf0f6;
+            border-left: 6px solid #d8b4e2;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        ">
+            <p style="margin: 0; font-size: 1.05rem;">
+                {texto_insight}
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ----------------------------------------
 # BOXPLOT Y RESUMEN
@@ -133,7 +143,7 @@ else:
         df_fil,
         x="Periodo",
         y="SALARIO.1",
-        title="Distribución de Salarios por Trimestre (máximo por graduado)",
+        title="Distribución de Salarios por Trimestre",
         labels={"SALARIO.1": "Salario mensual", "Periodo": "Año-Quimestre"},
         points="outliers",
         category_orders={"Periodo": orden_periodos},
@@ -147,13 +157,12 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Se toma el salario máximo por graduado en cada uno de los cuatro trimestres (febrero, mayo, septiembre, noviembre).<br>
-    La tarjeta de insight muestra el salario promedio anual calculado como promedio de los cuatro promedios trimestrales.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia:</strong> Empleo formal con vínculo.<br>
-    <strong>Afiliado Voluntario:</strong> Autónomos o emprendedores.<br>
-    <strong>Desconocido:</strong> Sin registro laboral formal.
-    """,
+    Esta visualización utiliza un <em>boxplot</em> para mostrar la distribución de salarios mensuales por trimestre durante el año 2024.<br>
+    <ul>
+    <li>La caja representa la concentración de los salarios en el rango central.</li>
+    <li>Los outliers (valores atípicos) están señalados como puntos fuera del rango típico.</li>
+    <li>Al pasar el mouse por encima de la caja, se pueden consultar estadísticos descriptivos como la media o valores mínimos y máximos.</li>
+    </ul>
+    Solo se incluyen personas con empleo formal, afiliadas al IESS (ya sea con contrato laboral o por cuenta propia).
+    """
 )

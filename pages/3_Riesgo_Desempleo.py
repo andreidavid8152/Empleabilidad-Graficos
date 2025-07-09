@@ -6,7 +6,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("📉 Riesgo de Desempleo por Cohorte")
+st.title("Riesgo de Desempleo")
 
 # 🌀 Cargar datos
 with st.spinner("Cargando datos..."):
@@ -103,12 +103,20 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra la proporción de graduados sin afiliación en un periodo determinado, respecto al total de la cohorte.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
-    """,
+    Este gráfico muestra la tasa de desempleo: es decir, el porcentaje de graduados de cada cohorte sin afiliación al sistema de seguridad social durante el año 2024, en relación con el total de graduados de esa cohorte.<br><br>
+    <strong>¿Qué significa “sin afiliación”?</strong><br>
+    Se consideran desempleados (en sentido amplio) quienes no tienen ningún registro formal de empleo, lo que puede incluir:<br>
+    <ul>
+    <li>Personas desempleadas o sin actividad laboral.</li>
+    <li>Quienes trabajan en el sector informal (sin contrato ni afiliación).</li>
+    <li>Personas que residen o trabajan fuera del país.</li>
+    <li>Graduados con información laboral no reportada o no registrada.</li>
+    </ul>
+    <strong>¿Qué se excluye de esta categoría?</strong><br>
+    No se consideran desempleados quienes tienen algún tipo de afiliación al IESS, ya sea por contrato laboral (relación de dependencia) o por cuenta propia (afiliación voluntaria, como en el caso de emprendedores o trabajadores independientes).<br><br>
+    <strong>Importante:</strong><br>
+    Cada punto representa la situación de una cohorte de graduados (según su año de graduación), medida en el año 2024.<br><br
+    <strong>¿Cómo interpretar esta tasa?</strong><br>
+    Una tasa más alta indica que una mayor proporción de graduados de esa cohorte no está registrada en empleo formal. Esto puede sugerir menor inserción laboral formal, más informalidad, migración o inactividad.
+    """
 )

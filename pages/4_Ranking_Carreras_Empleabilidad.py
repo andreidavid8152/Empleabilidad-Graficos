@@ -5,7 +5,7 @@ from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota, PALETA_PAST
 from utils.filtros import aplicar_filtros
 
 aplicar_tema_plotly()
-st.title("Ranking de Carreras por Empleabilidad")
+st.title("Ranking de Carreras con más Empleabilidad")
 
 # 🌀 Cargar datos sin procesar
 with st.spinner("Cargando datos..."):
@@ -183,12 +183,17 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Esta visualización muestra el orden de carreras según su tasa de empleabilidad promedio. El denominador considera todos los graduados por cohorte y carrera, sin importar su tipo de empleo o si tienen empleo; el numerador incluye solo quienes cumplen con el filtro seleccionado.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas que se autoafiliaron al IESS. Esto puede incluir emprendedores, profesionales independientes, o personas con ingresos propios no derivados de relación laboral.<br>
-    <strong>Desconocido: </strong>Graduados sin información laboral registrada. Esto incluye personas sin empleo formal, inactivas, trabajando fuera del país, o en sectores no registrados en la seguridad social.<br>
-    """,
+    Esta visualización muestra el ranking de carreras según el porcentaje de graduados con empleo formal, considerando a las promociones de 2023 y 2024.<br><br>
+    Se toma en cuenta a todos los graduados de cada carrera y se calcula qué porcentaje de ellos tiene un empleo formal, según los criterios definidos más abajo.<br><br>
+    <strong>¿Qué se considera empleo formal?</strong><br>
+    Se incluye a quienes:<br>
+    <ul>
+    <li><strong>Trabajan con contrato</strong>, registrados por un empleador en el IESS.</li>
+    <li><strong>Están afiliados por cuenta propia</strong> al IESS, como trabajadores independientes, emprendedores o profesionales autónomos.</li>
+    </ul>
+    <strong>¿Y los que no se consideran empleados formales?</strong><br>
+    Aquellos que no tienen registro en el sistema de seguridad social. Esto puede incluir personas desempleadas, inactivas, trabajando fuera del país o en el sector informal.<br><br>
+    <strong>¿Cómo interpretar este ranking?</strong><br>
+    Las carreras que aparecen en los primeros lugares son aquellas donde una mayor proporción de graduados ha logrado insertarse en el empleo formal. Las que tienen 0% no muestran registros formales de empleo para estas cohortes en 2024.
+    """
 )

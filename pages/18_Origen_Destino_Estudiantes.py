@@ -6,7 +6,7 @@ from utils.carga_datos import cargar_datos_titulos
 
 # === 1. Configuración inicial
 aplicar_tema_plotly()
-st.title("🏫 Universidades de Origen - Posgrados")
+st.title("Origen y destino de nuestros estudiantes")
 
 # === 2. Cargar datos
 with st.spinner("Cargando datos..."):

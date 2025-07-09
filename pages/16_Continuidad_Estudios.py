@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
-from utils.estilos import aplicar_tema_plotly
+from utils.estilos import aplicar_tema_plotly, mostrar_tarjeta_nota
 from utils.carga_datos import cargar_datos_titulos
 
 aplicar_tema_plotly()
-st.title("🎓 Continuidad Académica y Posgrados")
+st.title("Continuidad de Estudios")
 
 # === 1. Cargar datos
 with st.spinner("Cargando datos..."):
@@ -143,3 +143,19 @@ with col1:
 with col2:
     tarjeta("Tiempo al 1er Posgrado", f"{tiempo_1} años" if tiempo_1 is not None else "—", icon="⏱️")
     tarjeta("Tiempo al 2do Posgrado", f"{tiempo_2} años" if tiempo_2 is not None else "—", icon="📚")
+
+# --------------------------
+# NOTA
+# --------------------------
+mostrar_tarjeta_nota(
+    texto_principal="""
+    <strong>📌 Nota:</strong><br>
+    Este panel muestra indicadores clave sobre la continuación de estudios de posgrado por parte de los graduados.<br>
+    <ul>
+    <li><strong>Tasa de Continuidad:</strong> porcentaje de graduados que cursan al menos un posgrado luego de finalizar su carrera de pregrado.</li>
+    <li><strong>Tiempo al 1er Posgrado:</strong> promedio de años entre la graduación y el inicio del primer posgrado.</li>
+    <li><strong>Tiempo al 2do Posgrado:</strong> tiempo promedio entre el primer y el segundo posgrado (solo para quienes cursaron ambos).</li>
+    <li><strong>Tasa de Recompra UDLA:</strong> proporción de graduados que realizan al menos uno de sus posgrados nuevamente en la universidad.</li>
+    </ul>
+    """
+)

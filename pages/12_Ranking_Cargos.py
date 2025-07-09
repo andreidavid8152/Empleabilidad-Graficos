@@ -7,7 +7,7 @@ from utils.filtros import aplicar_filtros
 
 # Aplicar tema y título
 aplicar_tema_plotly()
-st.title("🏆 Ranking de Cargos Ocupados por Graduados")
+st.title("Ranking de Cargos")
 
 # 🌀 Cargar datos
 with st.spinner("Cargando datos..."):
@@ -92,14 +92,6 @@ else:
 mostrar_tarjeta_nota(
     texto_principal="""
     <strong>📌 Nota:</strong><br>
-    Para cada graduado se toma su registro del mes más reciente de empleo; 
-    si en ese mes hay duplicados, se elige el de mayor salario. 
-    Esta visualización muestra el porcentaje que cada cargo aporta 
-    al total de graduados considerados.
-    """,
-    nombre_filtro="Trabajo Formal",
-    descripcion_filtro="""
-    <strong>Relación de Dependencia: </strong>Graduados contratados formalmente por un empleador.<br>
-    <strong>Afiliado Voluntario: </strong>Personas autoafiliadas al IESS, como emprendedores o profesionales independientes.<br>
-    """,
+    Esta visualización muestra los principales cargos ocupados por graduados con empleo. Además de conocer los puestos más comunes, esta información permite identificar si los graduados están accediendo a cargos de mayor jerarquía, como jefaturas, supervisión o gerencias.
+    """
 )
